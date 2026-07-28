@@ -87,8 +87,15 @@ export default function Player() {
   const body = useRef()
 
   // Drop in above the ground so the first physics step settles, not tunnels.
+  // `?at=x,z` in dev drops you anywhere on the island, which beats walking
+  // across it to check one corner.
   const start = useMemo(() => {
-    const [x, , z] = spawn
+    let [x, , z] = spawn
+    if (import.meta.env.DEV) {
+      const at = new URLSearchParams(window.location.search).get('at')
+      const parts = at?.split(',').map(Number)
+      if (parts?.length === 2 && parts.every(Number.isFinite)) [x, z] = parts
+    }
     return [x, terrainHeight(x, z) + 3, z]
   }, [])
 

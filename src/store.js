@@ -34,8 +34,14 @@ export const useStore = create((set, get) => ({
   toggleAudio: () => set((s) => ({ audioOn: !s.audioOn })),
 
   // --- quality -------------------------------------------------------------
-  /** 'high' | 'medium' | 'low' — driven by <PerformanceMonitor> */
-  quality: 'high',
+  /**
+   * 'high' | 'medium' | 'low' — driven by <PerformanceMonitor>.
+   * `?quality=low` forces it in dev, which makes headless testing bearable.
+   */
+  quality:
+    (import.meta.env.DEV &&
+      new URLSearchParams(window.location.search).get('quality')) ||
+    'high',
   setQuality: (quality) => set((s) => (s.quality === quality ? s : { quality })),
 
   /** true when the OS asks for reduced motion */

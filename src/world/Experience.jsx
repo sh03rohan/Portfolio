@@ -13,6 +13,7 @@ import Foliage from './Foliage.jsx'
 import Decor from './Decor.jsx'
 import Structures from './Structures.jsx'
 import Player from './Player.jsx'
+import Zones from './Zones.jsx'
 import Effects from './Effects.jsx'
 import { keyboardMap } from './controls.js'
 import { useStore } from '../store.js'
@@ -70,6 +71,7 @@ function World({ freeCamera }) {
       <Foliage />
       <Decor />
       <Structures />
+      <Zones />
     </>
   )
 }
