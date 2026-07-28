@@ -126,7 +126,9 @@ export default function Zone({ zone }) {
       />
 
       <group ref={labelRef} position={[0, 2.9, 0]}>
-        <Html center distanceFactor={13} zIndexRange={[40, 0]} pointerEvents="auto">
+        {/* Kept well below the .ui layer so labels can't sit over the loader
+            or the panels. */}
+        <Html center distanceFactor={13} zIndexRange={[20, 0]} pointerEvents="auto">
           <button
             type="button"
             className={`zone-label${active ? ' is-active' : ''}${isOpen ? ' is-open' : ''}`}

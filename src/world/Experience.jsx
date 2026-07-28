@@ -1,7 +1,13 @@
 import { Suspense, useEffect, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { ACESFilmicToneMapping } from 'three'
-import { OrbitControls, AdaptiveDpr, KeyboardControls, Preload } from '@react-three/drei'
+import {
+  OrbitControls,
+  AdaptiveDpr,
+  KeyboardControls,
+  Preload,
+  PerformanceMonitor,
+} from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 
 import Atmosphere from './Atmosphere.jsx'
@@ -98,11 +104,27 @@ export default function Experience() {
         }}
         camera={{ position: override?.position ?? [0, 12, 26], fov: 48, near: 0.5, far: 700 }}
       >
-        <Suspense fallback={null}>
-          <World freeCamera={Boolean(override)} />
-          <Effects />
-          <Preload all />
-        </Suspense>
+        {/* Steps quality down on weak hardware and back up when there's
+            headroom. The store already gates shadow resolution, the post
+            stack, cloud volumes and decor density on this. */}
+        <PerformanceMonitor
+          bounds={() => [45, 58]}
+          flipflops={3}
+          onDecline={() => {
+            const { quality, setQuality } = useStore.getState()
+            setQuality(quality === 'high' ? 'medium' : 'low')
+          }}
+          onIncline={() => {
+            const { quality, setQuality } = useStore.getState()
+            if (quality === 'low') setQuality('medium')
+          }}
+        >
+          <Suspense fallback={null}>
+            <World freeCamera={Boolean(override)} />
+            <Effects />
+            <Preload all />
+          </Suspense>
+        </PerformanceMonitor>
 
         <AdaptiveDpr pixelated={false} />
         {override && (

@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import Experience from './world/Experience.jsx'
+import Audio from './world/Audio.jsx'
 import MobileControls from './ui/MobileControls.jsx'
 import UI from './ui/UI.jsx'
 
@@ -11,6 +12,8 @@ export default function App() {
       </Suspense>
       <UI />
       <MobileControls />
+      {/* Web Audio, not a three.js listener — lives outside the canvas. */}
+      <Audio />
     </div>
   )
 }
