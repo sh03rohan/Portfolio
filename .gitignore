@@ -1,9 +1,12 @@
-node_modules
+
+# macOS
+**/.DS_Store
+*.local
+.DS_Store
+.vercel
+.vite
 dist
 dist-ssr
-raw
-.DS_Store
-*.local
-.vite
-.vercel
+node_modules
 npm-debug.log*
+raw
