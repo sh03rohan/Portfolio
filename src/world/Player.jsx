@@ -12,6 +12,20 @@ import { usePlayerPosition } from './player-position.js'
 const CHARACTER_URL = '/models/character.glb'
 
 /**
+ * One-time yaw correction for the character mesh.
+ *
+ * ecctrl turns the whole rig toward the velocity every frame, so the model only
+ * ever needs a fixed offset for whichever way its "front" was authored.
+ * RobotExpressive faces +Z, which is already the direction ecctrl drives
+ * toward — so the offset is zero. A Math.PI here is what made it moonwalk:
+ * the rig turned the right way and the mesh then spun 180° back.
+ *
+ * Swapping in a different GLB? This is the only value to change — try
+ * Math.PI, then ±Math.PI / 2 if its front sits on X.
+ */
+const MODEL_YAW_OFFSET = 0
+
+/**
  * Maps ecctrl's movement states onto the clips in the character glTF.
  * RobotExpressive ships more clips than we need; these are the four that
  * matter for walking an island.
@@ -47,8 +61,10 @@ function CharacterModel(props) {
 
   return (
     <group ref={group} {...props} dispose={null}>
-      {/* Feet on the floor of the physics capsule, facing forward. */}
-      <primitive object={model} scale={0.38} position={[0, -0.85, 0]} rotation={[0, Math.PI, 0]} />
+      {/* Feet on the floor of the physics capsule. */}
+      <group rotation={[0, MODEL_YAW_OFFSET, 0]}>
+        <primitive object={model} scale={0.38} position={[0, -0.85, 0]} />
+      </group>
     </group>
   )
 }
