@@ -68,6 +68,22 @@ export const models = [
 ]
 
 /**
+ * Rigged characters aren't in Poly Haven's library, so the player model comes
+ * straight from a URL. RobotExpressive is a Quaternius model (CC0) modified by
+ * Don McCurdy and shipped with three.js; it carries the Idle / Walking /
+ * Running / Jump clips ecctrl's animation bridge expects.
+ */
+export const externalModels = [
+  {
+    url: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
+    out: 'character',
+    size: 512,
+    // Skinned meshes must not be simplified — it tears the vertex weights.
+    simplify: false,
+  },
+]
+
+/**
  * Texture-only pulls from *model* assets — Poly Haven exposes each map of a
  * model at the top level of its files payload, which is how we get a real
  * photoscanned leaf atlas (with alpha) for the procedural canopies.

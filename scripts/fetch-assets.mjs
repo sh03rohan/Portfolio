@@ -14,7 +14,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import path from 'node:path'
 import sharp from 'sharp'
-import { hdri, textures, models, modelTextures, mapAliases } from './assets.config.js'
+import { hdri, textures, models, modelTextures, externalModels, mapAliases } from './assets.config.js'
 
 const run = promisify(execFile)
 const ROOT = path.resolve(import.meta.dirname, '..')
@@ -170,6 +170,36 @@ async function doModels() {
   }
 }
 
+// ----------------------------------------------------- EXTERNAL MODELS -----
+async function doExternalModels() {
+  for (const model of externalModels) {
+    const out = path.join(PUB, 'models', `${model.out}.glb`)
+    if (await exists(out)) {
+      console.log(`  models/${model.out}.glb  (cached)`)
+      continue
+    }
+
+    const raw = path.join(RAW, 'models', `${model.out}.glb`)
+    await download(model.url, raw)
+    await mkdir(path.dirname(out), { recursive: true })
+    await run(
+      'npx',
+      [
+        'gltf-transform', 'optimize', raw, out,
+        '--compress', 'draco',
+        '--texture-compress', 'webp',
+        '--texture-size', String(model.size),
+        '--simplify', model.simplify === false ? 'false' : 'true',
+        // Joining meshes would collapse the skeleton's separate parts.
+        '--join', 'false',
+      ],
+      { cwd: ROOT, maxBuffer: 32 * 1024 * 1024 },
+    )
+    const { size } = await stat(out)
+    console.log(`  models/${model.out}.glb  ${mb(size)}`)
+  }
+}
+
 // ---------------------------------------------------------------- main ------
 async function total() {
   let bytes = 0
@@ -190,6 +220,7 @@ const groups = {
   textures: doTextures,
   modelTextures: doModelTextures,
   models: doModels,
+  externalModels: doExternalModels,
 }
 
 for (const [name, fn] of Object.entries(groups)) {

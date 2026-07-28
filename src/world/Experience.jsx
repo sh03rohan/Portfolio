@@ -1,21 +1,26 @@
 import { Suspense, useEffect, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { ACESFilmicToneMapping } from 'three'
-import { OrbitControls, AdaptiveDpr, BakeShadows } from '@react-three/drei'
+import { OrbitControls, AdaptiveDpr, KeyboardControls, Preload } from '@react-three/drei'
+import { Physics } from '@react-three/rapier'
 
 import Atmosphere from './Atmosphere.jsx'
 import Lighting from './Lighting.jsx'
 import Terrain from './Terrain.jsx'
+import TerrainCollider from './TerrainCollider.jsx'
 import Sea from './Sea.jsx'
 import Foliage from './Foliage.jsx'
 import Decor from './Decor.jsx'
 import Structures from './Structures.jsx'
+import Player from './Player.jsx'
 import Effects from './Effects.jsx'
+import { keyboardMap } from './controls.js'
 import { useStore } from '../store.js'
 
 /**
- * Dev affordance: `?cam=x,y,z&look=x,y,z` positions the review camera.
- * Handy for grabbing a specific spot on the island without editing code.
+ * Dev affordance: `?cam=x,y,z&look=x,y,z` swaps the player for a free orbit
+ * camera at that spot. Handy for reviewing a corner of the island without
+ * walking there.
  */
 function readCameraOverride() {
   if (!import.meta.env.DEV) return null
@@ -43,13 +48,25 @@ function useReducedMotionSync() {
   }, [setReducedMotion])
 }
 
-function World() {
+function World({ freeCamera }) {
+  const debugPhysics = import.meta.env.DEV && new URLSearchParams(window.location.search).has('physics')
+
   return (
     <>
       <Atmosphere />
       <Lighting />
-      <Terrain />
       <Sea />
+
+      {/* A fixed timestep, deliberately: with "vary" the step equals the frame
+          delta, so on a slow device a single step can advance the capsule
+          several metres and punch it straight through the ground. Fixed also
+          means movement feels identical on 60Hz and 144Hz displays. */}
+      <Physics timeStep={1 / 60} gravity={[0, -18, 0]} debug={debugPhysics}>
+        <Terrain />
+        <TerrainCollider />
+        {!freeCamera && <Player />}
+      </Physics>
+
       <Foliage />
       <Decor />
       <Structures />
@@ -67,30 +84,35 @@ export default function Experience() {
   const override = useMemo(readCameraOverride, [])
 
   return (
-    <Canvas
-      shadows
-      dpr={[1, 2]}
-      gl={{
-        antialias: false, // SMAA in the post stack handles edges
-        toneMapping: ACESFilmicToneMapping,
-        toneMappingExposure: 1.1,
-        powerPreference: 'high-performance',
-      }}
-      camera={{ position: override?.position ?? [30, 16, 38], fov: 48, near: 0.5, far: 700 }}
-    >
-      <Suspense fallback={null}>
-        <World />
-        <Effects />
-      </Suspense>
+    <KeyboardControls map={keyboardMap}>
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        gl={{
+          antialias: false, // SMAA in the post stack handles edges
+          toneMapping: ACESFilmicToneMapping,
+          toneMappingExposure: 1.1,
+          powerPreference: 'high-performance',
+        }}
+        camera={{ position: override?.position ?? [0, 12, 26], fov: 48, near: 0.5, far: 700 }}
+      >
+        <Suspense fallback={null}>
+          <World freeCamera={Boolean(override)} />
+          <Effects />
+          <Preload all />
+        </Suspense>
 
-      <AdaptiveDpr pixelated={false} />
-      <OrbitControls
-        makeDefault
-        target={override?.target ?? [0, 3, 0]}
-        maxPolarAngle={Math.PI * 0.49}
-        minDistance={12}
-        maxDistance={120}
-      />
-    </Canvas>
+        <AdaptiveDpr pixelated={false} />
+        {override && (
+          <OrbitControls
+            makeDefault
+            target={override.target}
+            maxPolarAngle={Math.PI * 0.49}
+            minDistance={4}
+            maxDistance={160}
+          />
+        )}
+      </Canvas>
+    </KeyboardControls>
   )
 }

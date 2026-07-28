@@ -23,6 +23,12 @@
     "three": "^0.180.0",
     "zustand": "^5.0.14"
   },
+  "comments": {
+    "overrides": "ecctrl imports QueryFilterFlags straight from @dimforge/rapier3d-compat without declaring it, and npm resolves that to the 0.12 copy dragged in by @types/three. The physics world is built by @react-three/rapier against 0.19, so ecctrl ends up talking to a second, uninitialised WASM instance: its ground raycasts silently fail and the character never walks. Pinning one version keeps a single instance."
+  },
+  "overrides": {
+    "@dimforge/rapier3d-compat": "^0.19.2"
+  },
   "devDependencies": {
     "@gltf-transform/cli": "^4.1.0",
     "@vitejs/plugin-react": "^4.3.4",
