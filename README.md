@@ -76,8 +76,9 @@ src/
     TerrainCollider.jsx  Rapier heightfield built from the same function
     TerrainMaterial.js   4-way splat: grass / path / sand / cliff
     SkyDome.jsx       gradient sky in the dusk palette
-    Atmosphere.jsx    HDRI lighting, fog, clouds, sparkles
-    Lighting.jsx      sun, fill, hemisphere, soft shadows
+    Weather.jsx       owns sky, fog, sun — lerped between presets
+    Precip.jsx        rain + snow particles
+    Atmosphere.jsx    HDRI reflections, cloud bank
     Sea.jsx           analytic ripples, fades to the horizon colour
     tree-geometry.js  procedural trunk + leaf-card canopy
     Foliage.jsx       instanced trees with wind
@@ -89,6 +90,7 @@ src/
     Effects.jsx       N8AO · bloom · DoF · vignette · SMAA
     Audio.jsx         synthesised ambience + chime
   ui/           Loader · Hud · Minimap · Panel · TextResume · MobileControls
+                WeatherControls
 ```
 
 A few decisions worth knowing about:
@@ -114,7 +116,38 @@ asked for, so the horizon colour, the fog and the UI accents all agree.
 plain module (`player-position.js`) that consumers read inside their own
 `useFrame`; the store only changes when you actually enter or leave a zone.
 
-### Dev-only URL flags
+**One thing owns the light.** `Weather.jsx` is the only component that touches
+`scene.fog`, `scene.environmentIntensity`, the sun and the sky shader. The
+store holds just the *target* preset index; every visible value is eased toward
+it inside the frame loop, so switching weather dissolves over a few seconds
+instead of cutting. Two components writing the fog would only fight.
+
+---
+
+## Weather
+
+Seven presets in [`src/data/weather.js`](src/data/weather.js) — day, sunset,
+night, rain, cloudy, winter, fog — cycling every 25 seconds, with a switcher in
+the top-right corner. Picking one by hand stops the cycle; the **Auto** button
+restarts it.
+
+Each preset carries the five stops of the gradient sky, fog colour and
+distances, sun colour/intensity/position, ambient and environment intensity, a
+sea tint, and flags for stars, cloud density, rain and snow. Adding an eighth
+is a matter of adding an entry and an icon name.
+
+Two things are tuned to this scene rather than copied from a generic setup:
+the presets repaint the **sky gradient** rather than hiding it behind a flat
+background colour, and fog distances are scaled to an island ~92 units across
+with sightlines to 250 — numbers that read as cosy haze in a small scene would
+put your own feet in cloud here.
+
+Auto-cycling is disabled under `prefers-reduced-motion` (weather that changes
+itself is unrequested motion); the manual switcher stays.
+
+---
+
+## Dev-only URL flags
 
 | Flag | Effect |
 | --- | --- |

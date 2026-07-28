@@ -1,5 +1,6 @@
 import Panel from './Panel.jsx'
 import Hud from './Hud.jsx'
+import WeatherControls from './WeatherControls.jsx'
 import Loader from './Loader.jsx'
 import TextResume from './TextResume.jsx'
 import { useStore } from '../store.js'
@@ -16,6 +17,7 @@ export default function UI() {
       {entered && (
         <>
           <Hud />
+          <WeatherControls />
           <Panel />
         </>
       )}

@@ -63,7 +63,13 @@ const fragmentShader = /* glsl */ `
   }
 `
 
-export default function SkyDome({ sunDirection = [-52, 26, -34] }) {
+/**
+ * `materialRef` hands the shader's uniforms up to Weather.jsx, which lerps the
+ * five gradient stops and the sun direction as the weather changes. The dome
+ * itself owns no animation — one component doing all the interpolation is what
+ * keeps the sky, the fog and the lights from drifting out of step.
+ */
+export default function SkyDome({ sunDirection = [-52, 26, -34], materialRef }) {
   const material = useMemo(
     () =>
       new ShaderMaterial({
@@ -84,6 +90,8 @@ export default function SkyDome({ sunDirection = [-52, 26, -34] }) {
       }),
     [sunDirection.join()],
   )
+
+  if (materialRef) materialRef.current = material
 
   return (
     <mesh material={material} renderOrder={-1000} frustumCulled={false}>

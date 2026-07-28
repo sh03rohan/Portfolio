@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { WEATHER } from './data/weather.js'
 
 /**
  * Global UI/world state. Deliberately small — anything that changes every
@@ -28,6 +29,18 @@ export const useStore = create((set, get) => ({
   visited: [],
   markVisited: (id) =>
     set((s) => (s.visited.includes(id) ? s : { visited: [...s.visited, id] })),
+
+  // --- weather -------------------------------------------------------------
+  /**
+   * Index into WEATHER. Only the *target* lives here — every visible value
+   * (sky stops, fog, light colour and intensity) is lerped toward it inside
+   * Weather.jsx's frame loop, so switching never snaps.
+   */
+  weatherIndex: 1, // sunset — the scene's signature look
+  autoWeather: true,
+  setWeather: (weatherIndex) => set({ weatherIndex }),
+  nextWeather: () => set((s) => ({ weatherIndex: (s.weatherIndex + 1) % WEATHER.length })),
+  toggleAuto: () => set((s) => ({ autoWeather: !s.autoWeather })),
 
   // --- audio ---------------------------------------------------------------
   audioOn: false, // off by default, per the brief

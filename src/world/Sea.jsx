@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { MeshStandardMaterial, Color } from 'three'
 import { island } from '../data/world.js'
 import { SKY } from './SkyDome.jsx'
+import { WEATHER } from '../data/weather.js'
 import { useStore } from '../store.js'
 
 /**
@@ -90,10 +91,20 @@ export default function Sea() {
   const reducedMotion = useStore((s) => s.reducedMotion)
   const time = useRef(0)
 
+  const scratch = useMemo(() => new Color(), [])
+
   useFrame((_, delta) => {
-    if (reducedMotion) return
-    time.current += delta
-    material.userData.uniforms.uTime.value = time.current
+    if (!reducedMotion) {
+      time.current += delta
+      material.userData.uniforms.uTime.value = time.current
+    }
+
+    // Follow the weather: water is mostly reflected sky, so leaving it violet
+    // through a snowstorm reads as a bug. Eased at the same rate as the sky.
+    const target = WEATHER[useStore.getState().weatherIndex]
+    const k = Math.min(1, delta * 0.9)
+    material.color.lerp(scratch.set(target.seaColor), k)
+    material.userData.uniforms.uHorizon.value.lerp(scratch.set(target.sky.horizon), k)
   })
 
   // The plane is wide enough that its far edge sits past the fog's far plane,

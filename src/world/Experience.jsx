@@ -12,7 +12,7 @@ import {
 import { Physics } from '@react-three/rapier'
 
 import Atmosphere from './Atmosphere.jsx'
-import Lighting from './Lighting.jsx'
+import Weather from './Weather.jsx'
 import Terrain from './Terrain.jsx'
 import TerrainCollider from './TerrainCollider.jsx'
 import Sea from './Sea.jsx'
@@ -61,8 +61,8 @@ function World({ freeCamera }) {
 
   return (
     <>
+      <Weather />
       <Atmosphere />
-      <Lighting />
       <Sea />
 
       {/* A fixed timestep, deliberately: with "vary" the step equals the frame
