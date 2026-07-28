@@ -22,6 +22,7 @@ import Structures from './Structures.jsx'
 import Player from './Player.jsx'
 import Zones from './Zones.jsx'
 import Effects from './Effects.jsx'
+import ClockGuard from './ClockGuard.jsx'
 import { keyboardMap } from './controls.js'
 import { useStore } from '../store.js'
 
@@ -140,6 +141,8 @@ export default function Experience() {
             <Preload all />
           </Suspense>
         </PerformanceMonitor>
+
+        <ClockGuard />
 
         {/* `?stats` in dev only — never shipped. */}
         {showStats && <Stats />}
