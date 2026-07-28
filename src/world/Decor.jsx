@@ -72,7 +72,14 @@ function InstancedModel({ url, points, castShadow = true, meshIndex, yOffset = 0
       {selected.map((mesh, i) => (
         <instancedMesh
           key={`${url}-${mesh.name}-${i}`}
-          ref={(el) => (refs.current[i] = el)}
+          // Block body, not a concise arrow: React 19 treats whatever a ref
+          // callback returns as its cleanup function, and `(el) => (arr[i] = el)`
+          // returns the mesh — which the reconciler then tries to call on
+          // detach, throwing "refCleanup is not a function" and taking the
+          // whole canvas down with it.
+          ref={(el) => {
+            refs.current[i] = el
+          }}
           args={[mesh.geometry, mesh.material, points.length]}
           castShadow={castShadow}
           receiveShadow
