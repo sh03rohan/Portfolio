@@ -121,6 +121,7 @@ plain module (`player-position.js`) that consumers read inside their own
 | `?at=x,z` | Spawn the player anywhere on the island |
 | `?cam=x,y,z&look=x,y,z` | Swap the player for a free orbit camera |
 | `?quality=low` | Force the low-quality tier (no post stack) |
+| `?stats` | drei’s fps overlay |
 | `?physics=1` | Rapier's debug wireframes |
 
 All are stripped from production builds.
@@ -129,10 +130,19 @@ All are stripped from production builds.
 
 ## Performance
 
-`PerformanceMonitor` watches the frame rate and steps a quality tier in the
-store; shadow map resolution, the post-processing stack, cloud volumes and
-decor density all key off it. `dpr` is capped at 2 and `AdaptiveDpr` drops it
-under load.
+`PerformanceMonitor` watches the frame rate and steps both the render scale and
+a quality tier in the store; shadow map resolution, the post-processing stack,
+cloud volumes and decor density all key off the tier.
+
+Render scale starts at **dpr 1.5**, not 2 — dpr 2 is four times the pixels of
+dpr 1 for a difference most people can't see, and it's the usual reason a 3D
+site feels heavy. It drops to 1 under load.
+
+Ambient occlusion and depth of field are the two most expensive passes, so
+they're skipped entirely on touch devices regardless of the measured tier —
+mobile GPUs struggle with them long before the frame timer notices. Physics
+runs on a fixed 1/60 step with `interpolate` so movement stays smooth when the
+frame rate and step rate don't line up.
 
 Production payload:
 

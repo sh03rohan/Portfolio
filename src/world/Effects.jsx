@@ -1,5 +1,6 @@
 import { EffectComposer, N8AO, Bloom, DepthOfField, Vignette, SMAA } from '@react-three/postprocessing'
 import { useStore } from '../store.js'
+import { useTouchDevice } from '../device.js'
 
 /**
  * The post stack. Golden rule from the brief: effects should be felt, not
@@ -18,9 +19,14 @@ export default function Effects() {
   const quality = useStore((s) => s.quality)
   const reducedMotion = useStore((s) => s.reducedMotion)
 
+  // Ambient occlusion and depth of field are by far the most expensive passes
+  // here, and mobile GPUs choke on them long before the frame monitor has
+  // noticed — so they're desktop-only regardless of the measured tier.
+  const touch = useTouchDevice()
+
   if (quality === 'low') return null
 
-  const high = quality === 'high'
+  const high = quality === 'high' && !touch
 
   return (
     <EffectComposer multisampling={0} enableNormalPass={high}>

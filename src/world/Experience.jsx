@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { ACESFilmicToneMapping } from 'three'
 import {
@@ -7,6 +7,7 @@ import {
   KeyboardControls,
   Preload,
   PerformanceMonitor,
+  Stats,
 } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 
@@ -67,8 +68,11 @@ function World({ freeCamera }) {
       {/* A fixed timestep, deliberately: with "vary" the step equals the frame
           delta, so on a slow device a single step can advance the capsule
           several metres and punch it straight through the ground. Fixed also
-          means movement feels identical on 60Hz and 144Hz displays. */}
-      <Physics timeStep={1 / 60} gravity={[0, -18, 0]} debug={debugPhysics}>
+          means movement feels identical on 60Hz and 144Hz displays.
+          `interpolate` smooths the rendered transform between those fixed
+          steps — without it, movement stutters whenever the frame rate and the
+          step rate don't line up. */}
+      <Physics timeStep={1 / 60} interpolate gravity={[0, -18, 0]} debug={debugPhysics}>
         <Terrain />
         <TerrainCollider />
         {!freeCamera && <Player />}
@@ -90,12 +94,21 @@ function World({ freeCamera }) {
 export default function Experience() {
   useReducedMotionSync()
   const override = useMemo(readCameraOverride, [])
+  const showStats = import.meta.env.DEV && new URLSearchParams(window.location.search).has('stats')
+
+  /**
+   * Render scale. Starting at 2 is the single most common reason a 3D site
+   * feels heavy — it's four times the pixels of dpr 1 for a difference most
+   * people can't see. 1.5 is the sweet spot, dropping to 1 when the frame
+   * timer says we're struggling.
+   */
+  const [dpr, setDpr] = useState(1.5)
 
   return (
     <KeyboardControls map={keyboardMap}>
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={dpr}
         gl={{
           antialias: false, // SMAA in the post stack handles edges
           toneMapping: ACESFilmicToneMapping,
@@ -111,10 +124,12 @@ export default function Experience() {
           bounds={() => [45, 58]}
           flipflops={3}
           onDecline={() => {
+            setDpr(1)
             const { quality, setQuality } = useStore.getState()
             setQuality(quality === 'high' ? 'medium' : 'low')
           }}
           onIncline={() => {
+            setDpr(1.5)
             const { quality, setQuality } = useStore.getState()
             if (quality === 'low') setQuality('medium')
           }}
@@ -126,6 +141,8 @@ export default function Experience() {
           </Suspense>
         </PerformanceMonitor>
 
+        {/* `?stats` in dev only — never shipped. */}
+        {showStats && <Stats />}
         <AdaptiveDpr pixelated={false} />
         {override && (
           <OrbitControls

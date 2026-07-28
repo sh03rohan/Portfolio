@@ -1,19 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { MeshBasicMaterial, Color } from 'three'
 import { EcctrlJoystick } from 'ecctrl'
-
-/** Touch-capable and without a hover pointer — i.e. a phone or tablet. */
-function useTouchDevice() {
-  const [touch, setTouch] = useState(false)
-  useEffect(() => {
-    const query = window.matchMedia('(hover: none) and (pointer: coarse)')
-    const sync = () => setTouch(query.matches)
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
-  return touch
-}
+import { useTouchDevice } from '../device.js'
 
 /**
  * ecctrl's on-screen joystick and jump button, shown only on touch devices.

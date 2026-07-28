@@ -12,7 +12,10 @@ import { useStore } from '../store.js'
  */
 export default function Lighting() {
   const quality = useStore((s) => s.quality)
-  const shadowMap = quality === 'high' ? 2048 : quality === 'medium' ? 1024 : 512
+  // 1024 is plenty for a soft golden-hour shadow at this island's scale; 2048
+  // costs four times the fill for a difference you can't see through the
+  // PCSS blur.
+  const shadowMap = quality === 'high' ? 1024 : quality === 'medium' ? 1024 : 512
   const span = island.radius + 8
 
   return (
