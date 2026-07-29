@@ -30,16 +30,16 @@ const MODEL_YAW_OFFSET = 0
  * against a model that stands 1.70 units tall — the head is meant to sit above
  * the capsule, the same way it does in most third-person games.
  */
-const CAPSULE_HALF_HEIGHT = 0.35
-const CAPSULE_RADIUS = 0.3
-const FLOAT_HEIGHT = 0.3
+const CAPSULE_HALF_HEIGHT = 0.42
+const CAPSULE_RADIUS = 0.34
+const FLOAT_HEIGHT = 0.36
 
 /**
  * Nominal distance from the rig's origin down to the model's feet, used while
  * the character is airborne. On the ground the offset is solved per frame
  * instead — see `useGroundedFeet`.
  */
-const MODEL_FOOT_OFFSET = -0.6
+const MODEL_FOOT_OFFSET = -0.63
 
 /** How far from nominal we'll still treat the character as standing. */
 const GROUNDED_TOLERANCE = 0.35
@@ -179,12 +179,29 @@ export default function Player() {
     return [x, terrainHeight(x, z) + 3, z]
   }, [])
 
-  // If the player ever ends up in the sea or off the edge, put them back.
+  // If the player ends up in the sea, off the edge, or launched skyward, put
+  // them back. The ceiling matters as much as the floor: a jump clears about
+  // 1.5 units, so anything past 25 above the ground is the float spring having
+  // gone unstable, and left alone it carries the camera up into the clouds.
   useFrame(() => {
     const rigid = body.current?.group
     if (!rigid) return
+
     const p = rigid.translation()
-    if (p.y > island.seaLevel - 8 && Math.hypot(p.x, p.z) < island.radius * 2.4) return
+    const v = rigid.linvel()
+    const speed = Math.hypot(v.x, v.y, v.z)
+
+    // Kill a divergence in place before it becomes a launch.
+    if (speed > 40) {
+      rigid.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      return
+    }
+
+    const tooHigh = p.y > terrainHeight(p.x, p.z) + 25
+    const drowned = p.y <= island.seaLevel - 8
+    const strayed = Math.hypot(p.x, p.z) >= island.radius * 2.4
+    if (!tooHigh && !drowned && !strayed) return
+
     rigid.setTranslation({ x: start[0], y: start[1], z: start[2] }, true)
     rigid.setLinvel({ x: 0, y: 0, z: 0 }, true)
     rigid.setAngvel({ x: 0, y: 0, z: 0 }, true)
@@ -221,16 +238,17 @@ export default function Player() {
         camLerpMult={22}
         camMoveSpeed={0.9}
         camTargetPos={{ x: 0, y: 0.55, z: 0 }}
-        // The idle bob was an underdamped float spring: ecctrl rides the
-        // capsule on a spring so it can climb steps, and at the stock damping
-        // it never settles. Softer spring, much heavier damping.
-        springK={1.2}
-        dampingC={0.28}
-        autoBalance
-        autoBalanceSpringK={0.4}
-        autoBalanceDampingC={0.03}
-        autoBalanceSpringOnY={0.5}
-        autoBalanceDampingOnY={0.05}
+        // Deliberately back at the values this ran on for phases 2-5, and left
+        // alone. ecctrl's float spring and auto-balance torque aren't scaled by
+        // frame time, so stiffening them to chase the idle bob made the spring
+        // pump energy in rather than out on any hitch: the capsule climbed
+        // 0.7 -> 2 -> 4 -> 8 -> 300 units in seconds, taking the camera up into
+        // the cloud layer — which reads as a plain white screen.
+        //
+        // The bob is fixed in useGroundedFeet instead, which only moves the
+        // mesh and so cannot destabilise the simulation at any frame rate.
+        springK={1.5}
+        dampingC={0.16}
       >
         <EcctrlAnimation characterURL={CHARACTER_URL} animationSet={ANIMATION_SET}>
           <CharacterModel />
