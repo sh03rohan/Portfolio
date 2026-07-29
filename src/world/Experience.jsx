@@ -22,6 +22,7 @@ import Structures from './Structures.jsx'
 import Player from './Player.jsx'
 import Zones from './Zones.jsx'
 import Effects from './Effects.jsx'
+import Warmup from './Warmup.jsx'
 import ClockGuard from './ClockGuard.jsx'
 import { keyboardMap } from './controls.js'
 import { useStore } from '../store.js'
@@ -59,6 +60,7 @@ function useReducedMotionSync() {
 
 function World({ freeCamera }) {
   const debugPhysics = import.meta.env.DEV && new URLSearchParams(window.location.search).has('physics')
+  const ready = useStore((s) => s.ready)
 
   return (
     <>
@@ -73,7 +75,16 @@ function World({ freeCamera }) {
           `interpolate` smooths the rendered transform between those fixed
           steps — without it, movement stutters whenever the frame rate and the
           step rate don't line up. */}
-      <Physics timeStep={1 / 60} interpolate gravity={[0, -18, 0]} debug={debugPhysics}>
+      {/* Frozen until the gate opens, so the character can't settle, slide or
+          drop while the loading screen is still up. It spawns at its exact
+          resting height, so unpausing moves it by nothing. */}
+      <Physics
+        paused={!ready}
+        timeStep={1 / 60}
+        interpolate
+        gravity={[0, -18, 0]}
+        debug={debugPhysics}
+      >
         <Terrain />
         <TerrainCollider />
         {!freeCamera && <Player />}
@@ -121,15 +132,21 @@ export default function Experience() {
         {/* Steps quality down on weak hardware and back up when there's
             headroom. The store already gates shadow resolution, the post
             stack, cloud volumes and decor density on this. */}
+        {/* Ignored until the gate opens. Loading and shader compilation tank
+            the frame rate by their nature, and reacting to that would drop the
+            quality tier — changing decor density and the post stack — as a
+            visible pop moments after the reveal. */}
         <PerformanceMonitor
           bounds={() => [45, 58]}
           flipflops={3}
           onDecline={() => {
+            if (!useStore.getState().ready) return
             setDpr(1)
             const { quality, setQuality } = useStore.getState()
             setQuality(quality === 'high' ? 'medium' : 'low')
           }}
           onIncline={() => {
+            if (!useStore.getState().ready) return
             setDpr(1.5)
             const { quality, setQuality } = useStore.getState()
             if (quality === 'low') setQuality('medium')
@@ -139,6 +156,7 @@ export default function Experience() {
             <World freeCamera={Boolean(override)} />
             <Effects />
             <Preload all />
+            <Warmup />
           </Suspense>
         </PerformanceMonitor>
 

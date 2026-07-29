@@ -88,6 +88,7 @@ src/
     Player.jsx        ecctrl capsule + character + follow camera
     Zones.jsx         proximity detection and the E key
     Zone.jsx          glow ring, floating label, zone light
+    Warmup.jsx        compiles shaders and gates the reveal
     CardStack.jsx     content cards that fan out of a structure
     cards.css         the three card layouts (A / B / D)
     Effects.jsx       N8AO · bloom · DoF · vignette · SMAA
@@ -142,6 +143,24 @@ world; keeping them out in front of the structure is what stops that showing.
 **Nothing re-renders on the animation loop.** The player's position lives in a
 plain module (`player-position.js`) that consumers read inside their own
 `useFrame`; the store only changes when you actually enter or leave a zone.
+
+**Nothing loads, compiles or settles in front of the visitor.** Downloads
+finishing isn't the same as being able to render: the first frame after a
+reveal is where shaders compile and geometry uploads to the GPU, which is
+hundreds of milliseconds of stutter exactly when someone is first looking.
+`Warmup.jsx` runs `compileAsync` and a throwaway render inside the same
+Suspense boundary as the content, then waits two real frames before flipping
+`ready`. The loading screen refuses to lift until then, physics stays paused
+so the character can't settle on camera, and the frame monitor ignores the
+loading-time stall that would otherwise drop the quality tier a second after
+the reveal.
+
+Two consequences worth knowing if you add to the scene: the character spawns
+at its exact resting height rather than above the ground, so unpausing physics
+moves it by nothing; and anything that starts hidden — the stars, rain, snow
+and clouds — is forced visible until `ready`, because three compiles via
+`traverseVisible` and silently skips whatever is hidden. Miss that and the
+shader compiles the first time it rains instead.
 
 **One thing owns the light.** `Weather.jsx` is the only component that touches
 `scene.fog`, `scene.environmentIntensity`, the sun and the sky shader. The

@@ -47,6 +47,7 @@ export default function Weather() {
   const skyMaterial = useRef()
 
   const quality = useStore((s) => s.quality)
+  const ready = useStore((s) => s.ready)
   // Read reactively only for things that must remount: stars and the shadow
   // sampler. Everything else is interpolated below.
   const weatherIndex = useStore((s) => s.weatherIndex)
@@ -163,18 +164,20 @@ export default function Weather() {
       {/* Cool counter-bounce so shadowed faces read coloured, not black. */}
       <directionalLight position={[34, 14, 30]} intensity={0.32} color="#8ea6ff" />
 
-      {active.stars > 0 && (
-        <group ref={ignoreFog}>
-          <Stars
-            radius={160}
-            depth={60}
-            count={quality === 'low' ? 700 : 1600}
-            factor={5}
-            fade
-            speed={0.4}
-          />
-        </group>
-      )}
+      {/* Always mounted, never conditionally created. Mounting Stars on the
+          switch to night would compile its shader at that moment — a visible
+          hitch mid-transition. Kept visible through warmup too, since three
+          compiles via traverseVisible and skips anything hidden. */}
+      <group ref={ignoreFog} visible={!ready || active.stars > 0}>
+        <Stars
+          radius={160}
+          depth={60}
+          count={quality === 'low' ? 700 : 1600}
+          factor={5}
+          fade
+          speed={0.4}
+        />
+      </group>
 
       <Precip type="rain" amount={active.rain} />
       <Precip type="snow" amount={active.snow} />

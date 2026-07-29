@@ -1,5 +1,6 @@
 import { useRef, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
+import { useStore } from '../store.js'
 
 /**
  * Rain and snow, as a single points cloud that follows the camera.
@@ -17,6 +18,10 @@ export default function Precip({ type = 'rain', amount = 0 }) {
   const points = useRef()
   const material = useRef()
   const { camera } = useThree()
+  // three compiles shaders via traverseVisible, so anything hidden during the
+  // warmup pass is skipped and pays for its compile later — as a hitch the
+  // first time it rains. Stay visible until the gate opens.
+  const ready = useStore((s) => s.ready)
 
   const AREA = 44
   const HEIGHT = 30
@@ -48,7 +53,7 @@ export default function Precip({ type = 'rain', amount = 0 }) {
     mat.opacity += (target - mat.opacity) * Math.min(1, delta * 2.2)
 
     const visible = mat.opacity > 0.01
-    mesh.visible = visible
+    mesh.visible = visible || !ready
     if (!visible) return
 
     // Snap to whole units so the field doesn't shimmer as the camera drifts.

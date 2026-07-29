@@ -46,6 +46,17 @@ const MODEL_FOOT_OFFSET = -0.63
 const GROUNDED_TOLERANCE = 0.35
 
 /**
+ * Where the capsule's origin settles above the ground once the float spring
+ * reaches equilibrium. Measured, not derived — the spring compresses a little
+ * under the body's own weight, so it isn't simply capsuleRadius + floatHeight.
+ *
+ * Spawning at exactly this height means unpausing physics moves the character
+ * by nothing. It used to drop in from 3 units up, which is a visible fall the
+ * moment the loading screen lifts.
+ */
+const REST_HEIGHT = 0.76
+
+/**
  * Below this horizontal speed, with no input, the character is considered
  * stopped and its sideways velocity is zeroed outright.
  *
@@ -187,9 +198,8 @@ export default function Player() {
   const body = useRef()
   const [, getKeys] = useKeyboardControls()
 
-  // Drop in above the ground so the first physics step settles, not tunnels.
-  // `?at=x,z` in dev drops you anywhere on the island, which beats walking
-  // across it to check one corner.
+  // Spawn already standing. `?at=x,z` in dev drops you anywhere on the island,
+  // which beats walking across it to check one corner.
   const start = useMemo(() => {
     let [x, , z] = spawn
     if (import.meta.env.DEV) {
@@ -197,7 +207,7 @@ export default function Player() {
       const parts = at?.split(',').map(Number)
       if (parts?.length === 2 && parts.every(Number.isFinite)) [x, z] = parts
     }
-    return [x, terrainHeight(x, z) + 3, z]
+    return [x, terrainHeight(x, z) + REST_HEIGHT, z]
   }, [])
 
   /**

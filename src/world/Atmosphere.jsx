@@ -22,6 +22,7 @@ export default function Atmosphere() {
   const quality = useStore((s) => s.quality)
   const reducedMotion = useStore((s) => s.reducedMotion)
   const clouds = useRef()
+  const ready = useStore((s) => s.ready)
   const opacity = useRef(WEATHER[useStore.getState().weatherIndex].clouds)
 
   useFrame((_, delta) => {
@@ -35,7 +36,8 @@ export default function Atmosphere() {
         child.material.opacity = opacity.current
       }
     })
-    clouds.current.visible = opacity.current > 0.02
+    // Visible through warmup so the cloud shader compiles behind the loader.
+    clouds.current.visible = opacity.current > 0.02 || !ready
   })
 
   return (

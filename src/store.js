@@ -17,6 +17,14 @@ function startingWeather() {
  */
 export const useStore = create((set, get) => ({
   // --- loading -------------------------------------------------------------
+  /**
+   * True once every asset has loaded, every shader has compiled and a real
+   * frame has been drawn. The loading screen refuses to lift before this, so
+   * nothing loads, compiles or settles in front of the visitor.
+   */
+  ready: false,
+  setReady: () => set({ ready: true }),
+
   entered: false,
   enter: () => set({ entered: true }),
 

@@ -25,6 +25,7 @@ export default function Loader() {
   const { active, progress } = useProgress()
   const entered = useStore((s) => s.entered)
   const enter = useStore((s) => s.enter)
+  const sceneReady = useStore((s) => s.ready)
 
   const [display, setDisplay] = useState(0)
   const [complete, setComplete] = useState(false)
@@ -40,12 +41,16 @@ export default function Loader() {
     }
   }, [progress, complete])
 
-  // Latch exactly once, when the loading manager is idle at a full 100.
+  // Latch exactly once: the loading manager idle at a full 100 *and* the scene
+  // reporting itself ready — shaders compiled, GPU uploads done, a real frame
+  // already drawn. Downloads finishing is not the same as being able to render
+  // smoothly, and lifting the screen on the former is what causes the reveal to
+  // stutter.
   useEffect(() => {
-    if (complete || active || peak.current < 100) return
+    if (complete || active || !sceneReady || peak.current < 100) return
     setComplete(true)
     setDisplay(100)
-  }, [active, progress, complete])
+  }, [active, progress, sceneReady, complete])
 
   // The reveal delay gets its own effect, keyed only on the latch. Sharing an
   // effect with `progress` meant a later progress tick ran the cleanup and
