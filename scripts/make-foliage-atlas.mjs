@@ -21,9 +21,9 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const RAW = path.join(ROOT, 'raw', 'textures')
 const OUT = path.join(ROOT, 'public', 'textures', 'canopy.webp')
 
-const TILE = 512 // px per cluster
+const TILE = 640 // px per cluster
 const GRID = 2 // 2x2 = 4 distinct clusters
-const LEAVES_PER_TILE = 46
+const LEAVES_PER_TILE = 150
 
 // Deterministic PRNG — the atlas must be identical on every rebuild.
 let seed = 20260728
@@ -103,7 +103,10 @@ const canopy = async () => {
     for (let tx = 0; tx < GRID; tx++) {
       for (let i = 0; i < LEAVES_PER_TILE; i++) {
         const src = cutouts[Math.floor(rand() * cutouts.length)]
-        const size = Math.round(between(TILE * 0.26, TILE * 0.5))
+        // Small relative to the tile: a canopy card is roughly a metre across
+        // in world space, so a leaf occupying a third of it renders 30cm wide
+        // and the tree reads as a houseplant. Real leaves are 5-15cm.
+        const size = Math.round(between(TILE * 0.1, TILE * 0.21))
 
         const leaf = await sharp(src)
           .rotate(Math.round(between(0, 360)), { background: { r: 0, g: 0, b: 0, alpha: 0 } })
@@ -116,8 +119,8 @@ const canopy = async () => {
         const { width: lw, height: lh } = await sharp(leaf).metadata()
 
         // Bias toward the tile centre so cluster edges stay soft and organic.
-        const cx = TILE * 0.5 + between(-TILE * 0.3, TILE * 0.3)
-        const cy = TILE * 0.5 + between(-TILE * 0.3, TILE * 0.3)
+        const cx = TILE * 0.5 + between(-TILE * 0.36, TILE * 0.36)
+        const cy = TILE * 0.5 + between(-TILE * 0.36, TILE * 0.36)
         const left = Math.round(tx * TILE + cx - lw / 2)
         const top = Math.round(ty * TILE + cy - lh / 2)
 

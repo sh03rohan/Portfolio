@@ -103,10 +103,21 @@ you stand on — verified by raycasting the physics world against the function.
 **The trees are procedural on purpose.** Poly Haven's photoscanned trees are
 600k+ vertices and meshopt can't reduce them without shredding the alpha leaf
 cards. So `scripts/make-foliage-atlas.mjs` bakes their CC0 leaf scan into four
-dense cluster cards, and `tree-geometry.js` builds a canopy from ~60 of them
-with vertex normals pointing away from the canopy centre — the standard game
-trick that makes flat billboards shade like a solid volume. The whole forest is
-six draw calls.
+dense cluster tiles, and `tree-geometry.js` grows a canopy from ~240 small
+cards per tree. Three details do the heavy lifting:
+
+- **Vertex normals point away from the canopy centre**, not along the card, so
+  flat billboards shade like one rounded volume.
+- **The crown is several overlapping lobes**, not one ellipsoid — a single
+  shell reads as a lollipop from any distance.
+- **Each card is tilted off-axis.** Cards facing exactly outward are all seen
+  exactly edge-on at the silhouette, which draws a hard sliver around the rim.
+
+Card size is the setting that decides whether it looks real: the atlas holds
+~150 leaves per tile, so a card about a metre across renders leaves at ~12cm.
+At 2m cards each leaf was 40cm and the tree looked like a houseplant.
+
+The whole forest is six draw calls.
 
 **The sky is a shader, not the HDRI.** The HDRI does the lighting and
 reflections; the visible sky is a gradient in the exact palette the brief
@@ -155,7 +166,8 @@ itself is unrequested motion); the manual switcher stays.
 | `?cam=x,y,z&look=x,y,z` | Swap the player for a free orbit camera |
 | `?quality=low` | Force the low-quality tier (no post stack) |
 | `?stats` | drei’s fps overlay |
-| `?physics=1` | Rapier's debug wireframes |
+| `?weather=<key>` | Pin one weather preset (day, night, rain…) |
+| `?physics=1` | Rapier’s debug wireframes |
 
 All are stripped from production builds.
 
@@ -181,12 +193,12 @@ Production payload:
 
 | | raw | over the wire |
 | --- | --- | --- |
-| JavaScript | 3.76 MB | **1.32 MB** |
-| Textures (WebP) | 2.16 MB | 2.16 MB |
+| JavaScript | 3.77 MB | **1.33 MB** |
+| Textures (WebP) | 2.38 MB | 2.38 MB |
 | HDRI | 1.14 MB | 0.71 MB |
 | Models (Draco + WebP) | 0.71 MB | 0.59 MB |
 | Draco decoder | 0.73 MB | 0.17 MB |
-| **Total** | **8.51 MB** | **≈ 4.96 MB** |
+| **Total** | **8.75 MB** | **≈ 5.19 MB** |
 
 Rapier is 0.93 MB of that gzipped JavaScript: `@dimforge/rapier3d-compat`
 inlines its WebAssembly as base64, which gzip can't compress well. It's split

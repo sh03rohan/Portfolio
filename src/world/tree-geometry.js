@@ -13,6 +13,7 @@ import { makeRandom } from './heightfield.js'
  */
 
 const UP = new Vector3(0, 1, 0)
+const SIDE = new Vector3(1, 0, 0)
 
 function trunkGeometry(random, { height, radius, bend, branches }) {
   const parts = []
@@ -56,7 +57,7 @@ function trunkGeometry(random, { height, radius, bend, branches }) {
   return { geometry, bendDir: dir }
 }
 
-function canopyGeometry(random, { cards, centerY, radiusXZ, radiusY, cardSize, atlas = 2 }) {
+function canopyGeometry(random, { cards, centerY, radiusXZ, radiusY, cardSize, lobes = 5, atlas = 2 }) {
   const positions = []
   const normals = []
   const uvs = []
@@ -64,26 +65,64 @@ function canopyGeometry(random, { cards, centerY, radiusXZ, radiusY, cardSize, a
   const indices = []
 
   const outward = new Vector3()
+  const facing = new Vector3()
+  const scratch = new Vector3()
   const tangentU = new Vector3()
   const tangentV = new Vector3()
 
+  /**
+   * Clusters of foliage rather than one smooth ellipsoid. A single shell reads
+   * as a lollipop from any distance; a handful of overlapping lobes gives the
+   * broken, clumpy silhouette real crowns have.
+   */
+  const clusters = []
+  for (let l = 0; l < lobes; l++) {
+    const theta = random() * Math.PI * 2
+    const phi = Math.acos(1 - random() * 1.25) // biased toward the top
+    const spread = 0.3 + random() * 0.45
+    clusters.push({
+      x: Math.sin(phi) * Math.cos(theta) * radiusXZ * spread,
+      y: Math.cos(phi) * radiusY * spread,
+      z: Math.sin(phi) * Math.sin(theta) * radiusXZ * spread,
+      radius: 0.42 + random() * 0.3,
+    })
+  }
+
   for (let i = 0; i < cards; i++) {
+    const lobe = clusters[Math.floor(random() * clusters.length)]
+
     // Bias the distribution upward: canopies are fuller on top than beneath.
     const theta = random() * Math.PI * 2
     const phi = Math.acos(1 - random() * 1.55)
-    const shell = 0.45 + random() * 0.55
+    const shell = 0.35 + random() * 0.65
 
     outward
       .set(Math.sin(phi) * Math.cos(theta), Math.cos(phi), Math.sin(phi) * Math.sin(theta))
       .normalize()
 
-    const cx = outward.x * radiusXZ * shell
-    const cy = centerY + outward.y * radiusY * shell
-    const cz = outward.z * radiusXZ * shell
+    const cx = lobe.x + outward.x * radiusXZ * lobe.radius * shell
+    const cy = centerY + lobe.y + outward.y * radiusY * lobe.radius * shell
+    const cz = lobe.z + outward.z * radiusXZ * lobe.radius * shell
+
+    // Shade against the whole crown, not the lobe: normals pointing away from
+    // the tree's centre are what make flat cards read as one rounded volume.
+    outward.set(cx, cy - centerY, cz).normalize()
+
+    // Cards all facing exactly outward means every card on the silhouette is
+    // seen exactly edge-on, which draws a thin dark sliver at the crown's rim.
+    // Tilting each one off-axis breaks that up and looks more like real
+    // foliage; the shading normal stays on `outward`.
+    facing
+      .copy(outward)
+      .addScaledVector(
+        scratch.set(random() - 0.5, random() - 0.5, random() - 0.5).normalize(),
+        0.55,
+      )
+      .normalize()
 
     // Build an orthonormal frame around the outward direction, then roll it.
-    tangentU.crossVectors(outward, Math.abs(outward.y) > 0.95 ? new Vector3(1, 0, 0) : UP).normalize()
-    tangentV.crossVectors(outward, tangentU).normalize()
+    tangentU.crossVectors(facing, Math.abs(facing.y) > 0.95 ? SIDE : UP).normalize()
+    tangentV.crossVectors(facing, tangentU).normalize()
     const roll = random() * Math.PI * 2
     const cos = Math.cos(roll)
     const sin = Math.sin(roll)
@@ -143,12 +182,18 @@ export function makeTree(seed, { tall = false } = {}) {
 
   // The canopy sits low enough to swallow the top of the trunk — a canopy
   // perched above bare wood is what makes procedural trees read as lollipops.
+  //
+  // Many small cards rather than few large ones: the atlas holds ~150 leaves
+  // per tile, so a card about a metre across renders leaves at roughly 12cm.
+  // At the old 2m cards each leaf was 40cm and the tree looked like a
+  // houseplant photographed from the wrong distance.
   const canopy = canopyGeometry(random, {
-    cards: tall ? 66 : 58,
+    cards: tall ? 265 : 235,
     centerY: height * 0.74,
     radiusXZ: (tall ? 2.7 : 3.1) + random() * 0.7,
     radiusY: (tall ? 2.6 : 2.0) + random() * 0.5,
-    cardSize: 1.95 + random() * 0.5,
+    cardSize: 1.12 + random() * 0.35,
+    lobes: 4 + Math.floor(random() * 3),
   })
   // Sit the canopy over the leaning trunk's tip.
   const lean = 0.32 + random() * 0.4

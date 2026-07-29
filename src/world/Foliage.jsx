@@ -37,7 +37,9 @@ function useCanopyMaterial() {
       side: DoubleSide,
       roughness: 0.88,
       metalness: 0,
-      color: new Color('#c8c2a6'), // knocks the scan's saturation back toward dusk
+      // White here so the per-instance tint set in TreeVariant is what shows;
+      // instanceColor multiplies this.
+      color: new Color('#ffffff'),
     })
 
     mat.onBeforeCompile = (shader) => {
@@ -124,6 +126,8 @@ function TreeVariant({ variant, barkMaterial, canopyMaterial, index }) {
 
   useLayoutEffect(() => {
     const dummy = new Object3D()
+    const tint = new Color()
+
     points.forEach(([x, y, z, yaw, scale], i) => {
       dummy.position.set(x, y, z)
       dummy.rotation.set(0, yaw, 0)
@@ -131,9 +135,21 @@ function TreeVariant({ variant, barkMaterial, canopyMaterial, index }) {
       dummy.updateMatrix()
       trunkRef.current?.setMatrixAt(i, dummy.matrix)
       canopyRef.current?.setMatrixAt(i, dummy.matrix)
+
+      // Nudge each canopy's hue and lightness. Identical green across a whole
+      // forest is the giveaway that everything came from one mesh; a few
+      // percent of drift is enough to break it up. Derived from the position
+      // so it's stable across reloads.
+      const noise = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1
+      tint.setHSL(0.23 + (noise - 0.5) * 0.06, 0.28 + noise * 0.18, 0.3 + noise * 0.14)
+      canopyRef.current?.setColorAt(i, tint)
     })
+
     if (trunkRef.current) trunkRef.current.instanceMatrix.needsUpdate = true
-    if (canopyRef.current) canopyRef.current.instanceMatrix.needsUpdate = true
+    if (canopyRef.current) {
+      canopyRef.current.instanceMatrix.needsUpdate = true
+      if (canopyRef.current.instanceColor) canopyRef.current.instanceColor.needsUpdate = true
+    }
   }, [points])
 
   if (!points.length) return null

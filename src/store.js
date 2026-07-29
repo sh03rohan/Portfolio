@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 import { WEATHER } from './data/weather.js'
 
+const pinnedWeather = () =>
+  import.meta.env.DEV ? new URLSearchParams(window.location.search).get('weather') : null
+
+function startingWeather() {
+  const key = pinnedWeather()
+  const index = WEATHER.findIndex((w) => w.key === key)
+  return index >= 0 ? index : 1
+}
+
 /**
  * Global UI/world state. Deliberately small — anything that changes every
  * frame (player transform) is kept in refs, not here, so React never re-renders
@@ -36,8 +45,10 @@ export const useStore = create((set, get) => ({
    * (sky stops, fog, light colour and intensity) is lerped toward it inside
    * Weather.jsx's frame loop, so switching never snaps.
    */
-  weatherIndex: 1, // sunset — the scene's signature look
-  autoWeather: true,
+  weatherIndex: startingWeather(), // sunset — the scene's signature look
+  // `?weather=<key>` in dev pins one preset, which keeps review screenshots
+  // from drifting to a different sky halfway through.
+  autoWeather: !pinnedWeather(),
   setWeather: (weatherIndex) => set({ weatherIndex }),
   nextWeather: () => set((s) => ({ weatherIndex: (s.weatherIndex + 1) % WEATHER.length })),
   toggleAuto: () => set((s) => ({ autoWeather: !s.autoWeather })),
