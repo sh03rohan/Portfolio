@@ -7,7 +7,7 @@ export const content = {
    * Optional headshot, served from public/. Everything that shows it degrades
    * quietly if the file isn't there, so the site never renders a broken image.
    */
-  portrait: '/portrait.jpg',
+  portrait: '/portrait.webp',
 
   about: {
     title: "Hi, I'm Rohan 👋",
