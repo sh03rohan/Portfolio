@@ -19,6 +19,7 @@ export const CARDS = {
       title: 'About',
       meta: c.about.title,
       body: c.about.paragraphs[0],
+      portrait: c.portrait,
     },
     {
       variant: 'A',

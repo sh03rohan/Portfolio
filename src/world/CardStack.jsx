@@ -116,6 +116,19 @@ function CardDOM({ card }) {
 
   return (
     <div className="card3d vA" style={style}>
+      {card.portrait && (
+        <img
+          className="a-avatar"
+          src={card.portrait}
+          alt=""
+          draggable={false}
+          // Drop out silently rather than showing a broken-image glyph if the
+          // headshot hasn't been added to public/ yet.
+          onError={(event) => {
+            event.currentTarget.style.display = 'none'
+          }}
+        />
+      )}
       <div className="a-role">{card.title}</div>
       {card.meta && <div className="a-meta">{card.meta}</div>}
       {card.period && <div className="a-period">{card.period}</div>}

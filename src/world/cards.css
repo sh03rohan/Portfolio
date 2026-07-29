@@ -48,6 +48,17 @@
   background: var(--accent);
 }
 
+.vA .a-avatar {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  object-fit: cover;
+  box-shadow: 0 6px 18px rgba(12, 8, 28, 0.45);
+}
+
 .vA .a-role {
   margin-bottom: 10px;
   font-family: var(--font-display);

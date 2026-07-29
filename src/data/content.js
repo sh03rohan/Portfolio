@@ -3,6 +3,12 @@ export const content = {
   role: 'Frontend & WordPress Developer',
   location: 'Mirpur 12, Dhaka, Bangladesh',
 
+  /**
+   * Optional headshot, served from public/. Everything that shows it degrades
+   * quietly if the file isn't there, so the site never renders a broken image.
+   */
+  portrait: '/portrait.jpg',
+
   about: {
     title: "Hi, I'm Rohan 👋",
     paragraphs: [
@@ -87,8 +93,12 @@ export const content = {
       { label: 'Email', detail: 'sh.rohan.personal@gmail.com', href: 'mailto:sh.rohan.personal@gmail.com' },
       { label: 'Phone', detail: '+880 1747-582013', href: 'tel:+8801747582013' },
       { label: 'WordPress.org', detail: 'Tukify plugin', href: 'https://wordpress.org/plugins/tukify/' },
-      { label: 'GitHub', detail: 'add your handle', href: '#' },
-      { label: 'LinkedIn', detail: 'add your handle', href: '#' },
+      { label: 'GitHub', detail: 'sh03rohan', href: 'https://github.com/sh03rohan' },
+      {
+        label: 'LinkedIn',
+        detail: 'md-sakibul-hasan-rohan',
+        href: 'https://www.linkedin.com/in/md-sakibul-hasan-rohan/',
+      },
     ],
   },
 }

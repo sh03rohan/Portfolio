@@ -528,6 +528,22 @@ kbd {
   margin-left: 1rem;
 }
 
+.resume__header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 2.4rem;
+}
+
+.resume__portrait {
+  flex: none;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--amber) 45%, transparent);
+  object-fit: cover;
+}
+
 .resume__name {
   margin: 0;
   font-family: var(--font-display);
@@ -537,7 +553,7 @@ kbd {
 }
 
 .resume__role {
-  margin: 0.3rem 0 2.4rem;
+  margin: 0.3rem 0 0;
   font-size: 0.85rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;

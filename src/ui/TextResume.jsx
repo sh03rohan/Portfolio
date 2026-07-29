@@ -46,11 +46,23 @@ export default function TextResume() {
           <X size={18} aria-hidden="true" />
         </button>
 
-        <header>
-          <h1 className="resume__name">{content.name}</h1>
-          <p className="resume__role">
-            {content.role} · {content.location}
-          </p>
+        <header className="resume__header">
+          {content.portrait && (
+            <img
+              className="resume__portrait"
+              src={content.portrait}
+              alt={`Portrait of ${content.name}`}
+              onError={(event) => {
+                event.currentTarget.style.display = 'none'
+              }}
+            />
+          )}
+          <div>
+            <h1 className="resume__name">{content.name}</h1>
+            <p className="resume__role">
+              {content.role} · {content.location}
+            </p>
+          </div>
         </header>
 
         <section>
