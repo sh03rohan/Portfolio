@@ -60,7 +60,7 @@ function useReducedMotionSync() {
 
 function World({ freeCamera }) {
   const debugPhysics = import.meta.env.DEV && new URLSearchParams(window.location.search).has('physics')
-  const ready = useStore((s) => s.ready)
+  const entered = useStore((s) => s.entered)
 
   return (
     <>
@@ -75,11 +75,11 @@ function World({ freeCamera }) {
           `interpolate` smooths the rendered transform between those fixed
           steps — without it, movement stutters whenever the frame rate and the
           step rate don't line up. */}
-      {/* Frozen until the gate opens, so the character can't settle, slide or
-          drop while the loading screen is still up. It spawns at its exact
-          resting height, so unpausing moves it by nothing. */}
+      {/* Frozen until you click in, so nothing settles or slides behind the
+          veil. The character spawns at its exact resting height, so starting
+          the simulation moves it by nothing. */}
       <Physics
-        paused={!ready}
+        paused={!entered}
         timeStep={1 / 60}
         interpolate
         gravity={[0, -18, 0]}

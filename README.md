@@ -93,7 +93,7 @@ src/
     cards.css         the three card layouts (A / B / D)
     Effects.jsx       N8AO · bloom · DoF · vignette · SMAA
     Audio.jsx         synthesised ambience + chime
-  ui/           Loader · Hud · Minimap · TextResume · MobileControls
+  ui/           Intro · Hud · Minimap · TextResume · MobileControls
                 WeatherControls
 ```
 
@@ -143,6 +143,19 @@ world; keeping them out in front of the structure is what stops that showing.
 **Nothing re-renders on the animation loop.** The player's position lives in a
 plain module (`player-position.js`) that consumers read inside their own
 `useFrame`; the store only changes when you actually enter or leave a zone.
+
+**There is no loading screen, only a veil.** The island renders from the first
+frame; `Intro.jsx` is a single element over the canvas that blurs and dims
+what's already there, and it moves through three states — a heavy blur with a
+progress bar while assets land (deep enough that things appearing behind it
+can't read as pop-in), a soft blur with "Click to start" once the scene is
+genuinely ready, then transparent and inert. Clicking anywhere starts, as do
+Space and Enter.
+
+It has to sit above the canvas in order to blur it, which means the veil — not
+the character — receives that click. So the character is the *visual* anchor
+rather than a hit target: it sits in a warm pool of light and turns slowly on
+the spot until you come in.
 
 **Nothing loads, compiles or settles in front of the visitor.** Downloads
 finishing isn't the same as being able to render: the first frame after a

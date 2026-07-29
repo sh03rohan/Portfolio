@@ -3,12 +3,13 @@ import { useFrame } from '@react-three/fiber'
 import { useAnimations, useKeyboardControls } from '@react-three/drei'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import Ecctrl, { EcctrlAnimation, useJoystickControls } from 'ecctrl'
-import { Vector3 } from 'three'
+import { Vector3, AdditiveBlending } from 'three'
 import { spawn, island } from '../data/world.js'
 import { useModel, MODELS } from './assets.js'
 import { terrainHeight } from './heightfield.js'
 import { useBeforePhysicsStep } from '@react-three/rapier'
 import { usePlayerPosition } from './player-position.js'
+import { useStore } from '../store.js'
 
 const CHARACTER_URL = MODELS.character
 
@@ -125,9 +126,41 @@ function useGroundedFeet(rigRef, offsetRef) {
   })
 }
 
+/**
+ * Before you click in, the character is the thing to look at: a warm pool of
+ * light under it and a slow turn on the spot.
+ *
+ * The rotation is applied to the offset group rather than the rig, so ecctrl
+ * still owns facing once play starts and there's nothing to unwind.
+ */
+function useIdleShowcase(offsetRef, ringRef) {
+  const entered = useStore((s) => s.entered)
+  const reducedMotion = useStore((s) => s.reducedMotion)
+  const spin = useRef(0)
+
+  useFrame((_, delta) => {
+    const offset = offsetRef.current
+    const ring = ringRef.current
+    if (!offset) return
+
+    if (!entered && !reducedMotion) spin.current += delta * 0.5
+    // Unwind to face forward once play starts, so ecctrl takes over cleanly.
+    else if (entered) spin.current += (0 - spin.current) * Math.min(1, delta * 4)
+
+    offset.rotation.y = MODEL_YAW_OFFSET + spin.current
+
+    if (ring) {
+      const target = entered ? 0 : 1
+      ring.material.opacity += (target - ring.material.opacity) * Math.min(1, delta * 3)
+      ring.visible = ring.material.opacity > 0.01
+    }
+  })
+}
+
 function CharacterModel(props) {
   const group = useRef()
   const offset = useRef()
+  const ring = useRef()
   const { scene, animations } = useModel(CHARACTER_URL)
 
   // Clone through SkeletonUtils so the skinned mesh keeps a working skeleton.
@@ -145,12 +178,31 @@ function CharacterModel(props) {
   }, [model])
 
   useGroundedFeet(group, offset)
+  useIdleShowcase(offset, ring)
 
   return (
     <group ref={group} {...props} dispose={null}>
       <group ref={offset} rotation={[0, MODEL_YAW_OFFSET, 0]} position={[0, MODEL_FOOT_OFFSET, 0]}>
         <primitive object={model} scale={0.38} />
       </group>
+
+      {/* Spotlight pool, only while waiting to be clicked. */}
+      <mesh
+        ref={ring}
+        position={[0, MODEL_FOOT_OFFSET + 0.02, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        renderOrder={3}
+      >
+        <circleGeometry args={[1.15, 48]} />
+        <meshBasicMaterial
+          color="#ffc98a"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={AdditiveBlending}
+          toneMapped={false}
+        />
+      </mesh>
     </group>
   )
 }

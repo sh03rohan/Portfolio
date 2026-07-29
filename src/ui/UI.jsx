@@ -1,6 +1,6 @@
 import Hud from './Hud.jsx'
 import WeatherControls from './WeatherControls.jsx'
-import Loader from './Loader.jsx'
+import Intro from './Intro.jsx'
 import TextResume from './TextResume.jsx'
 import { useStore } from '../store.js'
 
@@ -13,14 +13,16 @@ export default function UI() {
 
   return (
     <div className="ui">
+      {/* Mounted only once you're in, and faded rather than snapped so the
+          chrome arrives after the world rather than on top of the reveal. */}
       {entered && (
-        <>
+        <div className="hud-layer">
           <Hud />
           <WeatherControls />
-        </>
+        </div>
       )}
       <TextResume />
-      <Loader />
+      <Intro />
     </div>
   )
 }
