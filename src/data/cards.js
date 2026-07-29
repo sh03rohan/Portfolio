@@ -1,45 +1,85 @@
-import { content } from './content.js'
+import { content as c } from './content.js'
 
 /**
- * The portfolio, cut into cards that can fan out of a building.
+ * The portfolio, cut into cards that fan out of a building.
  *
- * Still derived entirely from content.js — editing your bio there updates the
- * in-world cards and the text résumé together. Titles double as animation
- * keys, so they need to stay unique within a zone.
+ * Each card names the layout it wants:
+ *   A — glass panel with an accent rail. The general case.
+ *   B — timeline entry: period badge, role, org, bulleted points.
+ *   D — editorial split header. Used for the one education entry.
+ *
+ * Still derived entirely from content.js, so editing your bio there updates
+ * the in-world cards and the text résumé together.
  */
 export const CARDS = {
   about: [
-    { title: 'About', body: content.about.paragraphs[0] },
-    { title: 'What I do', body: content.about.paragraphs[1] },
-    { title: 'Skills', body: content.about.skills.join('  ·  ') },
-    { title: 'Languages', body: content.about.languages.join('  ·  ') },
-  ],
-
-  work: [
-    ...content.work.featured.map((project) => ({
-      title: project.title,
-      body: `${project.stack}\n\n${project.desc}`,
-      link: project.link,
-      linkLabel: project.linkLabel,
-    })),
-    { title: '90+ projects', body: content.work.note },
-  ],
-
-  experience: [
-    ...content.experience.jobs.map((job) => ({
-      title: job.role,
-      body: `${job.org}\n${job.period}\n\n${job.points.join('\n')}`,
-    })),
     {
-      title: content.experience.education.degree,
-      body: `${content.experience.education.school}\n${content.experience.education.period}`,
+      variant: 'A',
+      accent: '#ffc98a',
+      title: 'About',
+      meta: c.about.title,
+      body: c.about.paragraphs[0],
+    },
+    {
+      variant: 'A',
+      accent: '#ffc98a',
+      title: 'Skills',
+      meta: 'What I work with',
+      body: c.about.skills.join('  ·  '),
+    },
+    {
+      variant: 'A',
+      accent: '#ffc98a',
+      title: 'Languages',
+      body: c.about.languages.join('  ·  '),
     },
   ],
 
-  contact: content.contact.links.map((link) => ({
-    title: link.label,
-    body: link.detail,
-    link: link.href,
+  work: [
+    ...c.work.featured.map((p) => ({
+      variant: 'A',
+      accent: '#ffd27a',
+      title: p.title,
+      meta: p.stack,
+      period: 'Featured project',
+      body: p.desc,
+      link: p.link,
+      linkLabel: p.linkLabel,
+    })),
+    {
+      variant: 'A',
+      accent: '#ffd27a',
+      title: '90+ projects delivered',
+      body: c.work.note,
+    },
+  ],
+
+  experience: [
+    ...c.experience.jobs.map((j) => ({
+      variant: 'B',
+      accent: '#9bd0ff',
+      role: j.role,
+      period: j.period,
+      org: j.org,
+      points: j.points,
+    })),
+    {
+      variant: 'D',
+      accent: '#ffc98a',
+      eyebrow: 'Education',
+      title: c.experience.education.degree,
+      org: c.experience.education.school,
+      period: c.experience.education.period,
+      body: 'Foundation in computer science & software development — the groundwork behind 90+ delivered projects.',
+    },
+  ],
+
+  contact: c.contact.links.map((l) => ({
+    variant: 'A',
+    accent: '#ec8a76',
+    title: l.label,
+    body: l.detail,
+    link: l.href,
     linkLabel: 'Open',
   })),
 }

@@ -89,6 +89,7 @@ src/
     Zones.jsx         proximity detection and the E key
     Zone.jsx          glow ring, floating label, zone light
     CardStack.jsx     content cards that fan out of a structure
+    cards.css         the three card layouts (A / B / D)
     Effects.jsx       N8AO · bloom · DoF · vignette · SMAA
     Audio.jsx         synthesised ambience + chime
   ui/           Loader · Hud · Minimap · TextResume · MobileControls
@@ -126,10 +127,17 @@ reflections; the visible sky is a gradient in the exact palette the brief
 asked for, so the horizon colour, the fog and the UI accents all agree.
 
 **The content lives in the world, not over it.** Opening a zone fans a stack
-of 3D cards out of the building itself (`CardStack.jsx`) and closing sends
-them back inside — there are no DOM popups. The cards billboard individually,
-and the whole arc snaps to face the camera on the frame it opens so it never
+of cards out of the building itself (`CardStack.jsx`) and closing sends them
+back inside — there are no DOM popups. The cards billboard individually, and
+the whole grid snaps to face the camera on the frame it opens so it never
 unfurls behind a building.
+
+They're real HTML placed in the scene by drei's `<Html transform>` rather than
+3D text meshes, which is why the type is crisp and why one stylesheet
+(`cards.css`) can describe three different layouts — a glass panel with an
+accent rail, a timeline entry, and an editorial split header. The trade is
+that DOM doesn't depth-test against the scene, so cards always draw over the
+world; keeping them out in front of the structure is what stops that showing.
 
 **Nothing re-renders on the animation loop.** The player's position lives in a
 plain module (`player-position.js`) that consumers read inside their own

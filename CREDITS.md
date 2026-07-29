@@ -93,11 +93,10 @@ the mute toggle and on/off plumbing stay as they are.
 | --- | --- | --- |
 | [Fraunces](https://fonts.google.com/specimen/Fraunces) (display) | Google Fonts | SIL Open Font License 1.1 |
 | [Inter](https://fonts.google.com/specimen/Inter) (body) | Google Fonts | SIL Open Font License 1.1 |
+| [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) (card badges) | Google Fonts | SIL Open Font License 1.1 |
 
-Both are also self-hosted as `.ttf` in `public/fonts` for the in-world 3D
-cards. troika (which drei's `<Text>` uses) needs a real font file, and with no
-`font` prop it quietly fetches Roboto from a Google CDN at runtime — self-
-hosting keeps the 3D type on-brand and removes that hidden dependency.
+The in-world cards are real DOM rendered through drei's `<Html transform>`, so
+they use these same webfonts rather than needing a separate 3D text face.
 
 ## Icons
 
@@ -118,4 +117,4 @@ hosting keeps the 3D type on-brand and removes that hidden dependency.
 [glTF-Transform](https://gltf.report) (MIT) ·
 [sharp](https://sharp.pixelplumbing.com) (Apache-2.0) ·
 [@react-spring/three](https://github.com/pmndrs/react-spring) (MIT) ·
-[troika-three-text](https://github.com/protectwise/troika) (MIT)
+[Lucide](https://lucide.dev) (ISC)

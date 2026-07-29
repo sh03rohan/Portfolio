@@ -1,0 +1,202 @@
+/**
+ * The in-world content cards.
+ *
+ * These are real DOM, placed in the scene by drei's <Html transform>, which is
+ * why the type is crisp at any distance instead of the soft SDF glyphs a 3D
+ * text mesh gives you.
+ *
+ * Every card reads `--accent` from an inline style, so one stylesheet covers
+ * all four zones.
+ */
+
+.card3d {
+  width: 300px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(26, 22, 42, 0.82);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px rgba(12, 8, 28, 0.4);
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.card3d .icn {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+  vertical-align: -2px;
+}
+
+/* ------------------------------------------- A · glass + accent rail ---- */
+.vA {
+  padding-left: 28px;
+}
+
+.vA::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.vA .a-role {
+  margin-bottom: 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.vA .a-meta {
+  margin-bottom: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.vA .a-period {
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: #9a8fb0;
+}
+
+.vA p {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #c9bcd6;
+}
+
+.vA a {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.vA a:hover {
+  text-decoration: underline;
+}
+
+/* --------------------------------------- B · timeline badge + bullets --- */
+.vB .b-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.vB .b-role {
+  margin-bottom: 5px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.vB .b-org {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #c9bcd6;
+}
+
+.vB .b-org .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.vB ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vB li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c9bcd6;
+}
+
+.vB li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* ------------------------------------------ D · editorial split header -- */
+.vD {
+  padding: 0;
+}
+
+.vD .d-band {
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    transparent
+  );
+}
+
+.vD .d-eye {
+  margin-bottom: 7px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.vD .d-role {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.12;
+}
+
+.vD .d-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #c9bcd6;
+}
+
+.vD .d-body {
+  padding: 20px 22px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #c9bcd6;
+}

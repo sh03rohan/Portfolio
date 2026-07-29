@@ -44,11 +44,6 @@ export const mapAliases = {
  * Photoscanned CC0 props. `res` is the Poly Haven texture resolution we pull
  * before our own downscale; `size` is what ships. `ratio` is the meshopt
  * simplification target (fraction of vertices kept).
- */
-/**
- * Photoscanned CC0 props. `res` is the Poly Haven texture resolution we pull
- * before our own downscale; `size` is what ships. `ratio` is the meshopt
- * simplification target (fraction of vertices kept).
  *
  * Note: Poly Haven's full trees are photogrammetry at 600k+ vertices, and
  * meshopt can't reduce them without shredding the alpha leaf cards — so the
@@ -80,25 +75,6 @@ export const externalModels = [
     size: 512,
     // Skinned meshes must not be simplified — it tears the vertex weights.
     simplify: false,
-  },
-]
-
-/**
- * Fonts for the in-world 3D cards.
- *
- * troika (which drei's <Text> uses) needs an actual font *file*, not a CSS
- * @font-face — and with no `font` prop it silently fetches Roboto from a
- * Google CDN at runtime. Self-hosting the two faces the UI already uses keeps
- * the 3D type on-brand and removes that hidden network dependency.
- */
-export const fonts = [
-  {
-    url: 'https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIcaRyjDg.ttf',
-    out: 'fraunces.ttf',
-  },
-  {
-    url: 'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf',
-    out: 'inter.ttf',
   },
 ]
 

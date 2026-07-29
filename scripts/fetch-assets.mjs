@@ -15,7 +15,7 @@ import { promisify } from 'node:util'
 import path from 'node:path'
 import sharp from 'sharp'
 import {
-  hdri, textures, models, modelTextures, externalModels, fonts, mapAliases,
+  hdri, textures, models, modelTextures, externalModels, mapAliases,
 } from './assets.config.js'
 
 const run = promisify(execFile)
@@ -202,20 +202,10 @@ async function doExternalModels() {
   }
 }
 
-// ----------------------------------------------------------------- FONTS ----
-async function doFonts() {
-  for (const font of fonts) {
-    const out = path.join(PUB, 'fonts', font.out)
-    await download(font.url, out)
-    const { size } = await stat(out)
-    console.log(`  fonts/${font.out}  ${mb(size)}`)
-  }
-}
-
 // ---------------------------------------------------------------- main ------
 async function total() {
   let bytes = 0
-  for (const sub of ['models', 'textures', 'hdri', 'fonts', 'audio']) {
+  for (const sub of ['models', 'textures', 'hdri', 'audio']) {
     const dir = path.join(PUB, sub)
     if (!(await exists(dir))) continue
     for (const f of await readdir(dir)) {
@@ -233,7 +223,6 @@ const groups = {
   modelTextures: doModelTextures,
   models: doModels,
   externalModels: doExternalModels,
-  fonts: doFonts,
 }
 
 for (const [name, fn] of Object.entries(groups)) {
