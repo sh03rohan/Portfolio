@@ -1,6 +1,6 @@
 export const content = {
   name: 'Md. Sakibul Hasan Rohan',
-  role: 'Frontend & WordPress Developer',
+  role: 'Jr. Frontend Developer',
   location: 'Mirpur 12, Dhaka, Bangladesh',
 
   /**
