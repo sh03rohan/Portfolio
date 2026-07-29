@@ -1,12 +1,13 @@
 import { useRef, useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useAnimations } from '@react-three/drei'
+import { useAnimations, useKeyboardControls } from '@react-three/drei'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
-import Ecctrl, { EcctrlAnimation } from 'ecctrl'
+import Ecctrl, { EcctrlAnimation, useJoystickControls } from 'ecctrl'
 import { Vector3 } from 'three'
 import { spawn, island } from '../data/world.js'
 import { useModel, MODELS } from './assets.js'
 import { terrainHeight } from './heightfield.js'
+import { useBeforePhysicsStep } from '@react-three/rapier'
 import { usePlayerPosition } from './player-position.js'
 
 const CHARACTER_URL = MODELS.character
@@ -43,6 +44,16 @@ const MODEL_FOOT_OFFSET = -0.63
 
 /** How far from nominal we'll still treat the character as standing. */
 const GROUNDED_TOLERANCE = 0.35
+
+/**
+ * Below this horizontal speed, with no input, the character is considered
+ * stopped and its sideways velocity is zeroed outright.
+ *
+ * Well under a walk (~4/s), so it can never interfere with actually moving —
+ * and it's only ever applied when nothing is being pressed, so it can't stop
+ * the character accelerating away from rest either.
+ */
+const IDLE_SPEED = 0.8
 
 /**
  * Maps ecctrl's movement states onto the clips in the character glTF.
@@ -153,6 +164,15 @@ function PositionReporter({ bodyRef }) {
       // Lets the screenshot harness compare where the player actually is
       // against where the terrain function says the ground should be.
       window.__player = { x, y, z, ground: terrainHeight(x, z) }
+
+      // Per-frame peak-to-peak over a rolling window. Sampling window.__player
+      // from outside can't see this — the shake happens between frames, and a
+      // slow poll just aliases it away.
+      const w = (window.__jitterWindow ??= [])
+      w.push([x, y, z])
+      if (w.length > 90) w.shift()
+      const span = (i) => Math.max(...w.map((p) => p[i])) - Math.min(...w.map((p) => p[i]))
+      window.__jitter = { x: span(0), y: span(1), z: span(2), frames: w.length }
     }
   })
 
@@ -165,6 +185,7 @@ function PositionReporter({ bodyRef }) {
  */
 export default function Player() {
   const body = useRef()
+  const [, getKeys] = useKeyboardControls()
 
   // Drop in above the ground so the first physics step settles, not tunnels.
   // `?at=x,z` in dev drops you anywhere on the island, which beats walking
@@ -179,6 +200,32 @@ export default function Player() {
     return [x, terrainHeight(x, z) + 3, z]
   }, [])
 
+  /**
+   * Bring a genuinely idle character to a dead stop, once per *physics step*.
+   *
+   * ecctrl floats the capsule on a ray instead of resting it on the ground, so
+   * nothing is touching anything and there's no contact friction. On a slope
+   * the only brake is a drag impulse, and drag settles into equilibrium with
+   * gravity rather than reaching zero — so the character creeps, the follow
+   * camera creeps with it, and the whole world looks like it's drifting.
+   *
+   * This has to run per step rather than per frame: physics can take several
+   * steps between renders, and anything applied per frame lets it slide
+   * through the steps in between.
+   */
+  useBeforePhysicsStep(() => {
+    const rigid = body.current?.group
+    if (!rigid) return
+
+    const keys = getKeys()
+    if (keys.forward || keys.backward || keys.leftward || keys.rightward) return
+    if (useJoystickControls.getState().curJoystickDis) return
+
+    const v = rigid.linvel()
+    const flat = Math.hypot(v.x, v.z)
+    if (flat > 0 && flat < IDLE_SPEED) rigid.setLinvel({ x: 0, y: v.y, z: 0 }, false)
+  })
+
   // If the player ends up in the sea, off the edge, or launched skyward, put
   // them back. The ceiling matters as much as the floor: a jump clears about
   // 1.5 units, so anything past 25 above the ground is the float spring having
@@ -190,6 +237,7 @@ export default function Player() {
     const p = rigid.translation()
     const v = rigid.linvel()
     const speed = Math.hypot(v.x, v.y, v.z)
+
 
     // Kill a divergence in place before it becomes a launch.
     if (speed > 40) {
@@ -238,17 +286,28 @@ export default function Player() {
         camLerpMult={22}
         camMoveSpeed={0.9}
         camTargetPos={{ x: 0, y: 0.55, z: 0 }}
-        // Deliberately back at the values this ran on for phases 2-5, and left
-        // alone. ecctrl's float spring and auto-balance torque aren't scaled by
-        // frame time, so stiffening them to chase the idle bob made the spring
-        // pump energy in rather than out on any hitch: the capsule climbed
-        // 0.7 -> 2 -> 4 -> 8 -> 300 units in seconds, taking the camera up into
-        // the cloud layer — which reads as a plain white screen.
-        //
-        // The bob is fixed in useGroundedFeet instead, which only moves the
-        // mesh and so cannot destabilise the simulation at any frame rate.
+        // The vertical spring is left exactly as it was through phases 2-5.
+        // It isn't scaled by frame time, so stiffening it to chase idle motion
+        // made it pump energy in rather than out on any hitch: the capsule
+        // climbed 0.7 -> 2 -> 4 -> 8 -> 300 units in seconds and took the
+        // camera into the cloud layer. Measured idle wobble on this axis is
+        // 0.0013 units, so there is nothing here to fix anyway.
         springK={1.5}
         dampingC={0.16}
+
+        // The idle shake was horizontal, not vertical: 0.30 on X and 0.24 on
+        // Z. ecctrl floats the capsule on a ray rather than resting it on the
+        // ground, so it has no contact friction and drifts down any slope.
+        // This drag is the only thing braking it, and at the stock 0.15 it
+        // was far too weak. Applied solely when there's no movement input and
+        // the character is grounded, so walking is untouched.
+        dragDampingC={0.42}
+
+        // Off, not merely softened. ecctrl locks the body's rotations
+        // outright when auto-balance is disabled, so the capsule is upright by
+        // construction and there's no balance torque left to hunt. Facing
+        // still works — that's driven on the character model, not the body.
+        autoBalance={false}
       >
         <EcctrlAnimation characterURL={CHARACTER_URL} animationSet={ANIMATION_SET}>
           <CharacterModel />
