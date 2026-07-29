@@ -12,7 +12,7 @@ import Minimap from './Minimap.jsx'
 export default function Hud() {
   const nearZone = useStore((s) => s.nearZone)
   const visited = useStore((s) => s.visited)
-  const openPanel = useStore((s) => s.openPanel)
+  const openZone = useStore((s) => s.openZone)
   const audioOn = useStore((s) => s.audioOn)
   const toggleAudio = useStore((s) => s.toggleAudio)
   const setTextMode = useStore((s) => s.setTextMode)
@@ -57,7 +57,7 @@ export default function Hud() {
         ))}
       </div>
 
-      <div className={`hud-hint${nearZone && !openPanel ? ' is-visible' : ''}`} aria-live="polite">
+      <div className={`hud-hint${nearZone && !openZone ? ' is-visible' : ''}`} aria-live="polite">
         Press <kbd>E</kbd> to open
       </div>
 

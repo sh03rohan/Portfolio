@@ -9,6 +9,8 @@ import {
   DoubleSide,
 } from 'three'
 import { terrainHeight } from './heightfield.js'
+import { CARDS } from '../data/cards.js'
+import CardStack from './CardStack.jsx'
 import { useStore } from '../store.js'
 
 /**
@@ -70,8 +72,8 @@ export default function Zone({ zone }) {
   const base = useMemo(() => [x, terrainHeight(x, z), z], [x, z])
 
   const active = useStore((s) => s.nearZone === zone.id)
-  const isOpen = useStore((s) => s.openPanel === zone.id)
-  const togglePanel = useStore((s) => s.togglePanel)
+  const isOpen = useStore((s) => s.openZone === zone.id)
+  const toggleZone = useStore((s) => s.toggleZone)
   const reducedMotion = useStore((s) => s.reducedMotion)
 
   const geometry = useRingGeometry(base, zone.radius)
@@ -107,13 +109,23 @@ export default function Zone({ zone }) {
     if (lightRef.current) {
       lightRef.current.intensity = 2 + uActive.value * 16
     }
-    if (labelRef.current && !reducedMotion) {
-      labelRef.current.position.y = 2.9 + Math.sin(uTime.value * 1.5) * 0.12
+    if (labelRef.current) {
+      // Stays put: the card fan deliberately leaves a gap at this height
+      // between its two rows, so the label sits in the band rather than over
+      // the cards — and doesn't climb into the HUD along the top edge.
+      const restY = isOpen ? 2.58 : 2.9
+      const bob = reducedMotion ? 0 : Math.sin(uTime.value * 1.5) * 0.12
+      labelRef.current.position.y +=
+        (restY + bob - labelRef.current.position.y) * Math.min(1, delta * 5)
     }
   })
 
   return (
     <group position={base}>
+      {/* Anchored at the structure, so the cards rise out of the building
+          itself rather than appearing over the top of the page. */}
+      <CardStack open={isOpen} cards={CARDS[zone.id] ?? []} accent={zone.accent} />
+
       <mesh geometry={geometry} material={material} renderOrder={2} frustumCulled={false} />
 
       <pointLight
@@ -135,12 +147,14 @@ export default function Zone({ zone }) {
             style={{ '--accent': zone.accent }}
             onClick={(event) => {
               event.stopPropagation()
-              togglePanel(zone.id)
+              toggleZone(zone.id)
             }}
-            aria-label={`${zone.label} — ${isOpen ? 'close' : 'open'} panel`}
+            aria-label={`${zone.label} — ${isOpen ? 'close' : 'open'}`}
           >
             <span className="zone-label__title">{zone.label}</span>
-            <span className="zone-label__hint">{active ? 'Press E' : zone.hint}</span>
+            <span className="zone-label__hint">
+              {isOpen ? 'Press E to close' : active ? 'Press E' : zone.hint}
+            </span>
           </button>
         </Html>
       </group>

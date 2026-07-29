@@ -20,7 +20,7 @@ export const useStore = create((set, get) => ({
   entered: false,
   enter: () => set({ entered: true }),
 
-  // --- proximity / panels --------------------------------------------------
+  // --- proximity / zones ---------------------------------------------------
   /** id of the zone the player is currently standing inside, or null */
   nearZone: null,
   setNearZone: (id) => {
@@ -28,11 +28,11 @@ export const useStore = create((set, get) => ({
     set({ nearZone: id })
   },
 
-  /** id of the zone whose panel is open, or null */
-  openPanel: null,
-  setOpenPanel: (id) => set({ openPanel: id }),
-  togglePanel: (id) => set((s) => ({ openPanel: s.openPanel === id ? null : id })),
-  closePanel: () => set({ openPanel: null }),
+  /** id of the zone whose cards are fanned out, or null */
+  openZone: null,
+  setOpenZone: (id) => set({ openZone: id }),
+  toggleZone: (id) => set((s) => ({ openZone: s.openZone === id ? null : id })),
+  closeZone: () => set({ openZone: null }),
 
   /** zones the player has already opened at least once (for the HUD progress) */
   visited: [],

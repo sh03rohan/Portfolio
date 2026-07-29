@@ -94,7 +94,7 @@ function createDrone(ctx, destination) {
   return () => stops.forEach((stop) => stop())
 }
 
-/** A soft bell struck when a panel opens. */
+/** A soft bell struck when a zone fans its cards out. */
 function chime(ctx, destination) {
   const now = ctx.currentTime
   for (const [freq, delay, level] of [
@@ -119,7 +119,7 @@ function chime(ctx, destination) {
 
 export default function Audio() {
   const audioOn = useStore((s) => s.audioOn)
-  const openPanel = useStore((s) => s.openPanel)
+  const openZone = useStore((s) => s.openZone)
   const context = useRef(null)
   const master = useRef(null)
   const teardown = useRef([])
@@ -157,11 +157,11 @@ export default function Audio() {
     }
   }, [audioOn])
 
-  // Ring the bell when a panel opens (not when it closes).
+  // Ring the bell when a zone opens (not when it closes).
   useEffect(() => {
-    if (!openPanel || !context.current || !master.current) return
+    if (!openZone || !context.current || !master.current) return
     chime(context.current, master.current)
-  }, [openPanel])
+  }, [openZone])
 
   return null
 }

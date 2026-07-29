@@ -84,6 +84,25 @@ export const externalModels = [
 ]
 
 /**
+ * Fonts for the in-world 3D cards.
+ *
+ * troika (which drei's <Text> uses) needs an actual font *file*, not a CSS
+ * @font-face — and with no `font` prop it silently fetches Roboto from a
+ * Google CDN at runtime. Self-hosting the two faces the UI already uses keeps
+ * the 3D type on-brand and removes that hidden network dependency.
+ */
+export const fonts = [
+  {
+    url: 'https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIcaRyjDg.ttf',
+    out: 'fraunces.ttf',
+  },
+  {
+    url: 'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf',
+    out: 'inter.ttf',
+  },
+]
+
+/**
  * Texture-only pulls from *model* assets — Poly Haven exposes each map of a
  * model at the top level of its files payload, which is how we get a real
  * photoscanned leaf atlas (with alpha) for the procedural canopies.

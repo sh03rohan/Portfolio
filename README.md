@@ -46,7 +46,8 @@ comes from Poly Haven's API and is Draco + WebP compressed on the way in.
 
 **All copy lives in [`src/data/content.js`](src/data/content.js).** Name, role,
 bio, skills, projects, jobs, education, contact links. Change it there and it
-updates the 3D panels *and* the text résumé — nothing is duplicated.
+updates the in-world cards *and* the text résumé — nothing is duplicated.
+`src/data/cards.js` decides how that content is cut into cards.
 
 Two links are still placeholders:
 
@@ -68,7 +69,7 @@ space around it automatically.
 ```
 src/
   data/         content.js (all copy) · world.js (island + zone layout)
-  store.js      zustand: active zone, open panel, audio, quality
+  store.js      zustand: active zone, open zone, audio, quality, weather
   world/
     Experience.jsx    <Canvas>, colour pipeline, <Physics>, perf monitor
     heightfield.js    terrainHeight(x, z) — the island, as a pure function
@@ -87,9 +88,10 @@ src/
     Player.jsx        ecctrl capsule + character + follow camera
     Zones.jsx         proximity detection and the E key
     Zone.jsx          glow ring, floating label, zone light
+    CardStack.jsx     content cards that fan out of a structure
     Effects.jsx       N8AO · bloom · DoF · vignette · SMAA
     Audio.jsx         synthesised ambience + chime
-  ui/           Loader · Hud · Minimap · Panel · TextResume · MobileControls
+  ui/           Loader · Hud · Minimap · TextResume · MobileControls
                 WeatherControls
 ```
 
@@ -122,6 +124,12 @@ The whole forest is six draw calls.
 **The sky is a shader, not the HDRI.** The HDRI does the lighting and
 reflections; the visible sky is a gradient in the exact palette the brief
 asked for, so the horizon colour, the fog and the UI accents all agree.
+
+**The content lives in the world, not over it.** Opening a zone fans a stack
+of 3D cards out of the building itself (`CardStack.jsx`) and closing sends
+them back inside — there are no DOM popups. The cards billboard individually,
+and the whole arc snaps to face the camera on the frame it opens so it never
+unfurls behind a building.
 
 **Nothing re-renders on the animation loop.** The player's position lives in a
 plain module (`player-position.js`) that consumers read inside their own
@@ -220,8 +228,9 @@ build with a separate `.wasm` file would roughly halve it, but
   GPUs, or anyone who just wants to read it.
 - `prefers-reduced-motion` disables the wind, wave, cloud, sparkle and label
   animations and drops depth of field.
-- Panels are keyboard operable: Esc closes, focus moves in and is restored on
-  close, and a closed panel is `inert` so it stays out of the tab order.
+- The content cards are 3D objects, so they can't be read by a screen reader —
+  which is exactly what the text résumé is for. Esc closes a card fan, and
+  walking away closes it too.
 - Visible focus rings throughout.
 
 ---

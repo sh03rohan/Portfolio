@@ -1,4 +1,3 @@
-import Panel from './Panel.jsx'
 import Hud from './Hud.jsx'
 import WeatherControls from './WeatherControls.jsx'
 import Loader from './Loader.jsx'
@@ -18,7 +17,6 @@ export default function UI() {
         <>
           <Hud />
           <WeatherControls />
-          <Panel />
         </>
       )}
       <TextResume />

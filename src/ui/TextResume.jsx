@@ -39,7 +39,7 @@ export default function TextResume() {
       <div className="resume__sheet">
         <button
           type="button"
-          className="panel__close resume__close"
+          className="icon-button resume__close"
           onClick={() => setTextMode(false)}
           aria-label="Close the text résumé"
         >

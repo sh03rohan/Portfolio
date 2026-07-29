@@ -77,7 +77,7 @@ photoscanned nature would have looked worse than either alone.
 ## Audio
 
 **No audio files are shipped.** The ambience in `src/world/Audio.jsx` — a
-brown-noise surf bed, a slowly detuning drone, and a bell struck when a panel
+brown-noise surf bed, a slowly detuning drone, and a bell struck when a zone
 opens — is synthesised at runtime with the Web Audio API.
 
 The brief suggested a CC0 loop played through Howler, but none of the free
@@ -93,6 +93,11 @@ the mute toggle and on/off plumbing stay as they are.
 | --- | --- | --- |
 | [Fraunces](https://fonts.google.com/specimen/Fraunces) (display) | Google Fonts | SIL Open Font License 1.1 |
 | [Inter](https://fonts.google.com/specimen/Inter) (body) | Google Fonts | SIL Open Font License 1.1 |
+
+Both are also self-hosted as `.ttf` in `public/fonts` for the in-world 3D
+cards. troika (which drei's `<Text>` uses) needs a real font file, and with no
+`font` prop it quietly fetches Roboto from a Google CDN at runtime — self-
+hosting keeps the 3D type on-brand and removes that hidden dependency.
 
 ## Icons
 
@@ -111,4 +116,6 @@ the mute toggle and on/off plumbing stay as they are.
 [Vite](https://vitejs.dev) (MIT) ·
 [React](https://react.dev) (MIT) ·
 [glTF-Transform](https://gltf.report) (MIT) ·
-[sharp](https://sharp.pixelplumbing.com) (Apache-2.0)
+[sharp](https://sharp.pixelplumbing.com) (Apache-2.0) ·
+[@react-spring/three](https://github.com/pmndrs/react-spring) (MIT) ·
+[troika-three-text](https://github.com/protectwise/troika) (MIT)

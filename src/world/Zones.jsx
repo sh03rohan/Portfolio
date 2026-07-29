@@ -38,25 +38,38 @@ function Proximity() {
       setNearZone(found)
 
       // Walking away dismisses whatever the zone opened.
-      const { openPanel, closePanel, markVisited } = useStore.getState()
+      const { openZone, closeZone, markVisited } = useStore.getState()
       if (found) markVisited(found)
-      else if (openPanel) closePanel()
+      else if (openZone) closeZone()
     }
   })
 
-  // "E" opens or closes the panel for whichever zone you're standing in.
+  // "E" fans the cards out of whichever structure you're standing at, or sends
+  // them back in.
   useEffect(
     () =>
       subscribeKeys(
         (state) => state.action1,
         (pressed) => {
           if (!pressed) return
-          const { nearZone, togglePanel } = useStore.getState()
-          if (nearZone) togglePanel(nearZone)
+          const { nearZone, toggleZone } = useStore.getState()
+          if (nearZone) toggleZone(nearZone)
         },
       ),
     [subscribeKeys],
   )
+
+  // Esc sends the cards home. This used to live in the DOM panel; with the
+  // panel gone the trigger owner has to carry it.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      const { openZone, closeZone } = useStore.getState()
+      if (openZone) closeZone()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   return null
 }
