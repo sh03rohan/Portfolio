@@ -1,3 +1,5 @@
+import { SpeedInsights } from '@vercel/speed-insights/react'
+
 import Experience from './world/Experience.jsx'
 import Audio from './world/Audio.jsx'
 import MobileControls from './ui/MobileControls.jsx'
@@ -14,6 +16,9 @@ export default function App() {
       <MobileControls />
       {/* Web Audio, not a three.js listener — lives outside the canvas. */}
       <Audio />
+      {/* Real-user Core Web Vitals. Inert unless the page is served from
+          Vercel — it renders nothing and reports nothing anywhere else. */}
+      <SpeedInsights />
     </div>
   )
 }

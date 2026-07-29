@@ -49,12 +49,14 @@ bio, skills, projects, jobs, education, contact links. Change it there and it
 updates the in-world cards *and* the text résumé — nothing is duplicated.
 `src/data/cards.js` decides how that content is cut into cards.
 
-Two links are still placeholders:
+The portrait on the About card and the text résumé is `public/portrait.webp`,
+pointed at by `content.profile.portrait`. Replace the file to change the photo;
+`raw/portrait-source.jpeg` is the uncompressed original.
 
-```js
-{ label: 'GitHub',   detail: 'add your handle', href: '#' },
-{ label: 'LinkedIn', detail: 'add your handle', href: '#' },
-```
+Note that `content.profile.contact` puts a real email address and phone number
+on a public page and in a public repo. That's a deliberate choice for a
+portfolio, but it is a choice — remove either entry and both the card and the
+text résumé drop it.
 
 **Where things sit in the world** is [`src/data/world.js`](src/data/world.js) —
 island size, spawn point, and each zone's position, trigger radius, accent
@@ -285,6 +287,11 @@ build with a separate `.wasm` file would roughly halve it, but
 4. **Deploy.** You'll get a `*.vercel.app` URL.
 5. Custom domain: Project → **Settings → Domains** → add it and follow the DNS
    instructions.
+
+`<SpeedInsights />` in `App.jsx` reports real-user Core Web Vitals to the
+Vercel dashboard. It's inert anywhere else — on localhost, Netlify or Pages it
+renders nothing and sends nothing. Delete the component and the dependency if
+you'd rather not collect it.
 
 Or from the terminal:
 

@@ -16,6 +16,7 @@
     "@react-three/fiber": "^9.3.0",
     "@react-three/postprocessing": "^3.0.4",
     "@react-three/rapier": "^2.2.0",
+    "@vercel/speed-insights": "^2.0.0",
     "ecctrl": "^1.0.97",
     "lucide-react": "^0.469.0",
     "react": "^19.1.0",
@@ -24,10 +25,13 @@
     "zustand": "^5.0.14"
   },
   "comments": {
-    "overrides": "ecctrl imports QueryFilterFlags straight from @dimforge/rapier3d-compat without declaring it, and npm resolves that to the 0.12 copy dragged in by @types/three. The physics world is built by @react-three/rapier against 0.19, so ecctrl ends up talking to a second, uninitialised WASM instance: its ground raycasts silently fail and the character never walks. Pinning one version keeps a single instance."
+    "overrides.@dimforge/rapier3d-compat": "ecctrl imports QueryFilterFlags straight from @dimforge/rapier3d-compat without declaring it, and npm resolves that to the 0.12 copy dragged in by @types/three. The physics world is built by @react-three/rapier against 0.19, so ecctrl ends up talking to a second, uninitialised WASM instance: its ground raycasts silently fail and the character never walks. Pinning one version keeps a single instance.",
+    "overrides.sharp": "@gltf-transform/cli pins sharp to ~0.34.5, which npm audit flags for four libvips CVEs. 0.35 is a drop-in here: the asset pipeline and the foliage atlas both produce byte-identical output on it.",
+    "devDependencies.@gltf-transform/cli": "Must stay on 4.x. `npm audit fix --force` will happily downgrade it to 2.5.1 to clear the remaining brace-expansion advisory; 2.x pulls in @squoosh/lib, which crashes on import under Node 18+ ('Cannot set property navigator'), so `npm run assets` stops working entirely. That advisory is a DoS in a build-time CLI parsing our own glob patterns — not worth breaking the toolchain for."
   },
   "overrides": {
-    "@dimforge/rapier3d-compat": "^0.19.2"
+    "@dimforge/rapier3d-compat": "^0.19.2",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@gltf-transform/cli": "^4.1.0",
