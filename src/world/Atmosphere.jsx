@@ -4,6 +4,7 @@ import { Environment, Cloud, Clouds, Sparkles } from '@react-three/drei'
 import { MeshBasicMaterial } from 'three'
 import { useStore } from '../store.js'
 import { WEATHER } from '../data/weather.js'
+import { HDRI } from './assets.js'
 
 /**
  * Reflections and airborne detail.
@@ -42,7 +43,7 @@ export default function Atmosphere() {
       {/* Self-hosted CC0 sunset HDRI — lighting and reflections only. No
           environmentIntensity prop here on purpose: Weather.jsx writes
           scene.environmentIntensity every frame and the two would fight. */}
-      <Environment files="/hdri/sunset.hdr" />
+      <Environment files={HDRI} />
 
       {quality !== 'low' && (
         <Clouds ref={clouds} material={MeshBasicMaterial} limit={220} range={90}>

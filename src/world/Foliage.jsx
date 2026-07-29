@@ -8,7 +8,7 @@ import {
   SRGBColorSpace,
   Color,
 } from 'three'
-import { useTextureSet } from './assets.js'
+import { useTextureSet, CANOPY_TEXTURE } from './assets.js'
 import { makeTree } from './tree-geometry.js'
 import { scatter } from './scatter.js'
 import { useStore } from '../store.js'
@@ -23,7 +23,7 @@ const VARIANTS = [
 
 /** Leaves need alpha cutout, double sides, and a bit of wind. */
 function useCanopyMaterial() {
-  const map = useTexture('/textures/canopy.webp')
+  const map = useTexture(CANOPY_TEXTURE)
   const reducedMotion = useStore((s) => s.reducedMotion)
   const wind = useRef({ value: 0 })
 

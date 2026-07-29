@@ -40,8 +40,8 @@ export default function Terrain() {
 
   const grass = useTextureSet('grass')
   const dirt = useTextureSet('dirt')
-  const sand = useTextureSet('sand', ['albedo', 'normal'])
-  const cliff = useTextureSet('cliff', ['albedo', 'normal'])
+  const sand = useTextureSet('sand')
+  const cliff = useTextureSet('cliff')
 
   const material = useMemo(
     () => new TerrainMaterial({ grass, dirt, sand, cliff, seaLevel: island.seaLevel }),

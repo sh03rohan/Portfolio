@@ -5,11 +5,11 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import Ecctrl, { EcctrlAnimation } from 'ecctrl'
 import { Vector3 } from 'three'
 import { spawn, island } from '../data/world.js'
-import { useModel } from './assets.js'
+import { useModel, MODELS } from './assets.js'
 import { terrainHeight } from './heightfield.js'
 import { usePlayerPosition } from './player-position.js'
 
-const CHARACTER_URL = '/models/character.glb'
+const CHARACTER_URL = MODELS.character
 
 /**
  * One-time yaw correction for the character mesh.
