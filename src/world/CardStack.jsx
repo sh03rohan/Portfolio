@@ -30,9 +30,16 @@ const ORIGIN = [0, 0.9, 0]
 
 /** Never more than this many across, or the ends leave the screen. */
 const MAX_PER_ROW = 3
-// Row centres. With CARD_H 1.4 these leave a clear band at ~2.58, which is
-// where Zone.jsx parks its label — so the label never sits on a card.
+// Row centres. Zone.jsx parks its label above the upper row's top edge
+// (3.35 + CARD_H/2 = 4.05) so it never covers a card.
 const ROW_Y = [3.35, 1.8]
+
+/**
+ * Body copy is set to fit rather than at one fixed size — a job description
+ * runs to eight lines while a contact detail is three words, and sizing both
+ * for the worst case leaves the short ones needlessly tiny.
+ */
+const bodySize = (body) => (body.length > 150 ? 0.068 : body.length > 80 ? 0.077 : 0.09)
 
 /**
  * Fan positions, on an arc centred on the structure.
@@ -155,7 +162,7 @@ export default function CardStack({ open, cards, accent = '#ffc98a' }) {
               // Far enough down to clear a two-line title — several project
               // and job titles wrap.
               position={[0, CARD_H / 2 - 0.5, 0.04]}
-              fontSize={0.074}
+              fontSize={bodySize(card.body)}
               maxWidth={CARD_W - 0.32}
               anchorX="center"
               anchorY="top"

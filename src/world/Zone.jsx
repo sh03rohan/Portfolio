@@ -110,10 +110,10 @@ export default function Zone({ zone }) {
       lightRef.current.intensity = 2 + uActive.value * 16
     }
     if (labelRef.current) {
-      // Stays put: the card fan deliberately leaves a gap at this height
-      // between its two rows, so the label sits in the band rather than over
-      // the cards — and doesn't climb into the HUD along the top edge.
-      const restY = isOpen ? 2.58 : 2.9
+      // Sits above the fanned cards, not among them. The top row is centred
+      // at 3.35 with cards 1.4 tall, so its upper edge is 4.05 — anything
+      // lower than this and the label covers the card behind it.
+      const restY = isOpen ? 4.7 : 2.9
       const bob = reducedMotion ? 0 : Math.sin(uTime.value * 1.5) * 0.12
       labelRef.current.position.y +=
         (restY + bob - labelRef.current.position.y) * Math.min(1, delta * 5)
