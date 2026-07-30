@@ -10,3 +10,8 @@ dist-ssr
 node_modules
 npm-debug.log*
 raw
+
+# Local environment. .env.example is committed; the real one never is.
+.env
+.env.local
+.env.*.local

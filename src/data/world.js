@@ -57,6 +57,21 @@ export const zones = [
     accent: '#ec8a76',
     structure: 'mailbox',
   },
+  {
+    id: 'guestbook',
+    label: 'Sky lanterns',
+    hint: 'Leave a wish',
+    // Out on the south shore, away from the four content zones — the sky above
+    // it needs to be empty, and a launch platform under the tree line would
+    // hide the thing it exists to show.
+    position: [8, 0, 29],
+    rotation: -0.35,
+    radius: 6.5,
+    accent: '#ffb066',
+    structure: 'platform',
+    /** Opens a DOM panel rather than a fan of content cards. */
+    panel: 'guestbook',
+  },
 ]
 
 /**

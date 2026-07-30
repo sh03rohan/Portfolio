@@ -2,7 +2,9 @@
 
 A small island at golden hour that you actually walk around. Wander up to the
 cabin, the workshop, the signpost or the mailbox and each one opens the
-matching part of the portfolio.
+matching part of the portfolio. There's a lantern platform on the shore to
+leave a message on, twelve things hidden in the trees, and a grove nobody
+mentions.
 
 Built with React Three Fiber, Rapier physics and ecctrl. Every asset is CC0 —
 see [CREDITS.md](CREDITS.md).
@@ -76,6 +78,13 @@ src/
     Experience.jsx    <Canvas>, colour pipeline, <Physics>, perf monitor
     heightfield.js    terrainHeight(x, z) — the island, as a pure function
     wind.js           the one GPU clock + the foliage sway shader
+    glow.js           fog that attenuates instead of tinting, for additive blends
+    SkyLanterns.jsx   the guestbook sky: instanced, GPU drift, hand-rolled picking
+    LanternMessage.jsx  the note on the lantern you tapped
+    Guestbook3D.jsx   loads the messages inside the ready gate
+    Collectibles.jsx  the twelve sparks + the pickup burst
+    Fireworks.jsx     the all-found display
+    HiddenGrove.jsx   the easter egg
     Ambience.jsx       birds · chimney smoke · fireflies
     Birds.jsx         instanced flock, flight solved in the vertex shader
     Smoke.jsx         chimney plume
@@ -93,7 +102,7 @@ src/
     tree-geometry.js  procedural trunk + leaf-card canopy
     Foliage.jsx       instanced trees with wind
     Decor.jsx         instanced CC0 rocks, plants, lanterns
-    Structures.jsx    the four buildings
+    Structures.jsx    the five buildings
     Player.jsx        ecctrl capsule + character + follow camera
     Zones.jsx         proximity detection and the E key
     Zone.jsx          glow ring, floating label, zone light
@@ -103,7 +112,8 @@ src/
     Effects.jsx       N8AO · bloom · DoF · vignette · SMAA
     Audio.jsx         synthesised ambience + chime
   ui/           Intro · Hud · Minimap · TextResume · MobileControls
-                WeatherControls
+                WeatherControls · Guestbook (the write panel)
+  data/         …plus collectibles.js and lanterns.js
 ```
 
 A few decisions worth knowing about:
@@ -227,6 +237,109 @@ materials, which is what gets them fog, tone mapping, output colour space and
 size attenuation for free. A raw shader would have to reimplement all four, and
 would get the fog preset visibly wrong. Their soft round edge is a smoothstep on
 `gl_PointCoord`, so there's no sprite texture to download.
+
+---
+
+## The sky lantern guestbook
+
+There's a fifth place on the island now: a plank deck at the south shore with a
+brazier on it. Walk up, press <kbd>E</kbd>, write a wish, and your lantern rises
+and joins everyone else's drifting over the island. Look up and tap one to read
+what somebody wrote.
+
+**It works with no setup at all.** Without a database the guestbook keeps
+messages in the visitor's own browser, so the feature is complete and private to
+them. Adding Supabase makes it shared. Nothing in the app knows which is in use.
+
+### Turning on the shared version
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In the SQL editor, run:
+
+```sql
+create table lanterns (
+  id uuid default gen_random_uuid() primary key,
+  name text not null check (char_length(name) between 1 and 40),
+  message text not null check (char_length(message) between 1 and 140),
+  hue real default 30,
+  created_at timestamptz default now()
+);
+alter table lanterns enable row level security;
+create policy "read all"   on lanterns for select using (true);
+create policy "insert one" on lanterns for insert with check (
+  char_length(name) between 1 and 40 and char_length(message) between 1 and 140
+);
+```
+
+3. Copy `.env.example` to `.env` and fill in the project URL and the **anon**
+   key (Settings → API). Add the same two in Vercel under Settings →
+   Environment Variables, then redeploy.
+
+That's it. The panel's wording changes by itself from "on this device" to
+"everyone who visits will see it".
+
+### What's actually protecting the table
+
+Worth being straight about this, because it's easy to assume the wrong thing.
+
+The anon key is **meant** to be public — it ships in the JavaScript bundle
+whatever you do. What keeps the table safe is the row-level security policy
+above, which is enforced by Postgres: select is allowed, insert is allowed only
+with a name and message inside the length limits, and update and delete aren't
+allowed at all because no policy grants them.
+
+Everything in the client is a courtesy, not a control. The profanity list, the
+30-second cooldown and the honeypot field all stop a careless submission; none
+of them stop a determined one, because anyone can read the key out of the bundle
+and POST straight to the API. If the guestbook ever attracts real traffic, the
+fix is server-side: add an `approved boolean default false` column, select only
+approved rows, and tick them off yourself. Until then, deleting a row from the
+Supabase dashboard is the moderation tool.
+
+**Never put the `service_role` key in `.env`.** It bypasses RLS entirely, and
+anything in a `VITE_`-prefixed variable is published to every visitor.
+
+### How it's built
+
+**No Supabase SDK.** The brief called for `@supabase/supabase-js`; this talks to
+the same service over plain `fetch`. Supabase's REST layer is PostgREST, so a
+select is a GET and an insert is a POST — about thirty lines in
+[`src/data/lanterns.js`](src/data/lanterns.js) against roughly 40kB gzipped of
+client library, on a page that already ships 5MB. Swapping the SDK back in means
+replacing two functions and nothing else.
+
+**The sky is loaded before the veil lifts.** `readLanterns()` throws its promise
+during render, suspending inside the same boundary as the rest of the world — so
+the ready gate can't open until the messages have arrived. Otherwise three
+hundred lanterns would appear a second after the reveal, which is exactly the
+pop the gate exists to prevent. A failed request resolves to an empty list
+rather than rejecting: an unreachable database costs an empty sky, never a
+broken page.
+
+**Releasing one is optimistic.** The lantern goes up the instant you press the
+button and stays up even if the write fails — losing somebody's wish to a
+network blip is worse than a sky that's briefly ahead of the database.
+
+**The mesh is allocated once at the tier's cap** (300 / 150 / 60) and never
+resized. Releasing writes one instance matrix and bumps `count`; rebuilding the
+mesh to add one would drop the sky's shader and recompile it at exactly the
+moment the visitor is watching their own lantern go up.
+
+**Picking is done by hand**, and this is the part worth knowing about if you
+touch the drift. three raycasts an InstancedMesh against its instance matrices —
+and every one of those says "at the platform", because the rise only exists in
+the vertex shader. So `SkyLanterns.jsx` replaces `raycast` with one that tests
+the ray against a sphere at each lantern's *animated* position, computed by
+`lanternOffset()` — a JavaScript mirror of the GLSL. **The two have to agree
+exactly**, or you tap a lantern and read a different one's message. Three
+hundred sphere tests on a click are far cheaper than writing three hundred
+matrices every frame just to keep three's picking informed.
+
+**The column height is tuned to the camera, not to realism.** At 78 units it
+looked right in isolation and was almost entirely outside the frustum in
+practice — the follow camera sits about two units up with a 48° field of view.
+46 keeps the whole column reachable with an ordinary drag, and the panel says so,
+because a sky you can't see reads as a sky that's empty.
 
 ---
 

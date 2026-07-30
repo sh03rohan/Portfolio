@@ -45,6 +45,14 @@ function useBuildMaterials() {
         emissiveIntensity: 0.65,
         roughness: 0.35,
       }),
+      // Coals, not lamplight: pushed over the bloom threshold so the brazier is
+      // the brightest thing on the shore and reads from across the island.
+      ember: new MeshStandardMaterial({
+        color: '#ff7a2f',
+        emissive: new Color('#ff8b3d'),
+        emissiveIntensity: 2.8,
+        roughness: 0.8,
+      }),
     }
   }, [wood, roof])
 }
@@ -246,7 +254,69 @@ function Mailbox({ materials: m, accent }) {
   )
 }
 
-const BUILDERS = { house: House, workshop: Workshop, signpost: Signpost, mailbox: Mailbox }
+/**
+ * Guestbook — a plank deck at the waterline with a brazier to light from.
+ *
+ * Deliberately low and open: everything that matters about this zone happens in
+ * the sky above it, so the structure has to stay out of its own way. The one
+ * tall element is the brazier, and that's on the far side from the shore so it
+ * doesn't sit between the player and the lanterns going up.
+ */
+function Platform({ materials: m }) {
+  // Six boards with a hair of gap between them, rather than one slab — at this
+  // size the seams are the only thing that says "deck" instead of "crate".
+  const boards = [-1.75, -1.05, -0.35, 0.35, 1.05, 1.75]
+
+  return (
+    <group>
+      {boards.map((z) => (
+        <mesh key={z} castShadow receiveShadow material={m.plank} position={[0, 0.18, z]}>
+          <boxGeometry args={[5.2, 0.16, 0.64]} />
+        </mesh>
+      ))}
+
+      {/* Bearers under the boards, visible from the side. */}
+      {[-2.2, 0, 2.2].map((x) => (
+        <mesh key={`bearer${x}`} castShadow receiveShadow material={m.beam} position={[x, 0.06, 0]}>
+          <boxGeometry args={[0.22, 0.24, 4.3]} />
+        </mesh>
+      ))}
+
+      {/* Mooring posts, tallest at the water end. */}
+      {[
+        [-2.4, 2.1, 0.62],
+        [2.4, 2.1, 0.62],
+        [-2.4, -2.1, 0.44],
+        [2.4, -2.1, 0.44],
+      ].map(([x, z, h]) => (
+        <mesh key={`post${x}${z}`} castShadow receiveShadow material={m.beam} position={[x, h / 2, z]}>
+          <cylinderGeometry args={[0.11, 0.13, h, 8]} />
+        </mesh>
+      ))}
+
+      {/* The brazier: a stubby column, a bowl, and coals inside it. */}
+      <group position={[-1.9, 0, -1.5]}>
+        <mesh castShadow receiveShadow material={m.plankDark} position={[0, 0.5, 0]}>
+          <cylinderGeometry args={[0.2, 0.26, 0.72, 10]} />
+        </mesh>
+        <mesh castShadow receiveShadow material={m.beam} position={[0, 0.98, 0]}>
+          <cylinderGeometry args={[0.44, 0.28, 0.34, 12, 1, true]} />
+        </mesh>
+        <mesh material={m.ember} position={[0, 1.06, 0]}>
+          <cylinderGeometry args={[0.36, 0.3, 0.12, 12]} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+const BUILDERS = {
+  house: House,
+  workshop: Workshop,
+  signpost: Signpost,
+  mailbox: Mailbox,
+  platform: Platform,
+}
 
 export default function Structures() {
   const materials = useBuildMaterials()

@@ -112,7 +112,9 @@ export default function Zone({ zone }) {
     if (labelRef.current) {
       // Sits above the card grid, not among it. The upper row is centred at
       // 3.3 and the tallest card reaches ~0.9 above that, so 4.9 clears it.
-      const restY = isOpen ? 4.9 : 2.9
+      // Zones that open a DOM panel have no grid to clear, and lifting anyway
+      // pushes the label off the top of the screen at this camera distance.
+      const restY = isOpen && !zone.panel ? 4.9 : 2.9
       const bob = reducedMotion ? 0 : Math.sin(uTime.value * 1.5) * 0.12
       labelRef.current.position.y +=
         (restY + bob - labelRef.current.position.y) * Math.min(1, delta * 5)
@@ -122,8 +124,9 @@ export default function Zone({ zone }) {
   return (
     <group position={base}>
       {/* Anchored at the structure, so the cards rise out of the building
-          itself rather than appearing over the top of the page. */}
-      <CardStack open={isOpen} cards={CARDS[zone.id] ?? []} />
+          itself rather than appearing over the top of the page. Zones that
+          declare a `panel` open a DOM form instead — see ui/Guestbook.jsx. */}
+      {!zone.panel && <CardStack open={isOpen} cards={CARDS[zone.id] ?? []} />}
 
       <mesh geometry={geometry} material={material} renderOrder={2} frustumCulled={false} />
 

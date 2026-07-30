@@ -13,6 +13,7 @@ import { Physics } from '@react-three/rapier'
 
 import Atmosphere from './Atmosphere.jsx'
 import Ambience from './Ambience.jsx'
+import Guestbook3D from './Guestbook3D.jsx'
 import Weather from './Weather.jsx'
 import Terrain from './Terrain.jsx'
 import TerrainCollider from './TerrainCollider.jsx'
@@ -96,6 +97,7 @@ function World({ freeCamera }) {
       <Structures />
       <Zones />
       <Ambience />
+      <Guestbook3D />
     </>
   )
 }

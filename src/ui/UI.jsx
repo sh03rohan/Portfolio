@@ -1,5 +1,6 @@
 import Hud from './Hud.jsx'
 import WeatherControls from './WeatherControls.jsx'
+import Guestbook from './Guestbook.jsx'
 import Intro from './Intro.jsx'
 import TextResume from './TextResume.jsx'
 import { useStore } from '../store.js'
@@ -19,6 +20,7 @@ export default function UI() {
         <div className="hud-layer">
           <Hud />
           <WeatherControls />
+          <Guestbook />
         </div>
       )}
       <TextResume />

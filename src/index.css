@@ -400,6 +400,171 @@ kbd {
   transform: translate(-50%, 0);
 }
 
+/* ----------------------------------------------------------- guestbook --- */
+/* The one panel that comes to the front instead of living in the world: it
+   holds text inputs, and a caret inside an <Html transform> shears with the
+   camera. Bottom-centre so it doesn't cover the platform or the sky above it. */
+.guestbook {
+  position: absolute;
+  left: 50%;
+  bottom: max(1.6rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(23rem, calc(100vw - 2.7rem));
+  padding: 1.15rem 1.25rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--amber) 30%, transparent);
+  border-radius: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 22px 60px rgba(10, 6, 24, 0.5);
+  pointer-events: auto;
+  animation: guestbook-in 0.4s var(--ease) both;
+}
+
+@keyframes guestbook-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.guestbook__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.6rem;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s var(--ease);
+}
+
+.guestbook__close:hover {
+  color: var(--ink);
+}
+
+.guestbook__title {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: 1.06rem;
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.guestbook__lede {
+  margin: 0 0 0.9rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+.guestbook__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 0.3rem;
+  font-size: 0.71rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.guestbook__count {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.guestbook__count.is-low {
+  color: var(--coral);
+}
+
+.guestbook__input {
+  width: 100%;
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(10, 7, 22, 0.5);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  transition: border-color 0.2s var(--ease);
+}
+
+.guestbook__input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--amber) 60%, transparent);
+}
+
+.guestbook__input--area {
+  resize: none;
+  line-height: 1.5;
+}
+
+/* Off-screen rather than display:none — plenty of bots skip hidden fields. */
+.guestbook__trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.guestbook__send {
+  width: 100%;
+  height: 38px;
+  border: 1px solid color-mix(in srgb, var(--amber) 55%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--amber) 14%, transparent);
+  color: var(--amber);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.22s var(--ease), color 0.22s var(--ease);
+}
+
+.guestbook__send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--amber) 26%, transparent);
+  color: var(--ink);
+}
+
+.guestbook__send:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.guestbook__status {
+  margin: 0.7rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.guestbook__status.is-ok {
+  color: var(--amber);
+}
+
+.guestbook__status.is-warn {
+  color: var(--coral);
+}
+
+.guestbook__aside {
+  margin: 0.75rem 0 0;
+  font-size: 0.7rem;
+  text-align: center;
+  color: var(--ink-faint);
+}
+
 /* ------------------------------------------------------------- minimap --- */
 .minimap {
   position: absolute;

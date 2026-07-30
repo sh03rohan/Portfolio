@@ -101,6 +101,22 @@ export const useStore = create((set, get) => ({
   emotes: 0,
   emote: () => set((s) => ({ emotes: s.emotes + 1 })),
 
+  // --- guestbook -----------------------------------------------------------
+  /**
+   * Every lantern in the sky, newest first. Loaded once inside the ready-gate
+   * Suspense boundary so the sky is full before the veil lifts, then only ever
+   * grown by a release.
+   */
+  lanterns: [],
+  setLanterns: (lanterns) => set({ lanterns }),
+  /** Optimistic: the lantern goes up the instant you release it. */
+  prependLantern: (entry) => set((s) => ({ lanterns: [entry, ...s.lanterns] })),
+
+  /** Index into `lanterns` of the one whose message is open, or null. */
+  readingLantern: null,
+  readLantern: (index) => set((s) => ({ readingLantern: s.readingLantern === index ? null : index })),
+  closeLantern: () => set({ readingLantern: null }),
+
   // --- weather -------------------------------------------------------------
   /**
    * Index into WEATHER. Only the *target* lives here — every visible value

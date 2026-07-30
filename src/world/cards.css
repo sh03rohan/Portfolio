@@ -253,3 +253,61 @@
   letter-spacing: 0.04em;
   color: var(--ink-faint);
 }
+
+/* -------------------------------------------------- a lantern's message --
+   Small, because it hangs off a lantern that may be a hundred feet up and the
+   card mustn't swallow the sky it's floating in. */
+.lantern-note {
+  position: relative;
+  width: 210px;
+  padding: 14px 30px 12px 16px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 176, 102, 0.3);
+  background: rgba(28, 20, 36, 0.88);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 36px rgba(10, 6, 24, 0.5);
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.lantern-note__message {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.lantern-note__by {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  font-size: 0.7rem;
+  color: #ffb066;
+}
+
+.lantern-note__when {
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.lantern-note__close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lantern-note__close:hover {
+  color: var(--ink);
+}
