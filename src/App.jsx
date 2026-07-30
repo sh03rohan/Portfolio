@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
 import Experience from './world/Experience.jsx'
@@ -19,6 +20,9 @@ export default function App() {
       {/* Real-user Core Web Vitals. Inert unless the page is served from
           Vercel — it renders nothing and reports nothing anywhere else. */}
       <SpeedInsights />
+      {/* Page views, same deal: outside the Canvas, renders nothing, and only
+          reports when served from Vercel. */}
+      <Analytics />
     </div>
   )
 }

@@ -16,6 +16,7 @@
     "@react-three/fiber": "^9.3.0",
     "@react-three/postprocessing": "^3.0.4",
     "@react-three/rapier": "^2.2.0",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "ecctrl": "^1.0.97",
     "lucide-react": "^0.469.0",

@@ -557,10 +557,12 @@ build with a separate `.wasm` file would roughly halve it, but
 5. Custom domain: Project → **Settings → Domains** → add it and follow the DNS
    instructions.
 
-`<SpeedInsights />` in `App.jsx` reports real-user Core Web Vitals to the
-Vercel dashboard. It's inert anywhere else — on localhost, Netlify or Pages it
-renders nothing and sends nothing. Delete the component and the dependency if
-you'd rather not collect it.
+`<SpeedInsights />` and `<Analytics />` in `App.jsx` report real-user Core Web
+Vitals and page views to the Vercel dashboard. Both are inert anywhere else — on
+localhost, Netlify or Pages they render nothing and send nothing, and the two
+`/_vercel/…/script.js` requests you'll see 404 locally are expected: Vercel
+injects those at the edge in production. Delete either component and its
+dependency if you'd rather not collect it.
 
 Or from the terminal:
 
