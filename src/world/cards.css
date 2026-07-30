@@ -211,3 +211,45 @@
   line-height: 1.6;
   color: #c9bcd6;
 }
+
+/* ------------------------------------------------- the hidden grove note --
+   Same glass as a content card, but narrower and warmer — it isn't part of the
+   portfolio, it's a note left in a clearing. Opacity and lift are written from
+   the frame loop in HiddenGrove.jsx (no transition here, or the fade would
+   fight the distance easing). */
+.grove-note {
+  width: 250px;
+  padding: 20px 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 201, 138, 0.26);
+  background: rgba(30, 22, 38, 0.84);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 44px rgba(12, 8, 28, 0.45);
+  font-family: var(--font-body);
+  color: var(--ink);
+  text-align: center;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.grove-note__title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.grove-note__body {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+
+.grove-note__sign {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}

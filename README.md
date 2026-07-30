@@ -230,6 +230,66 @@ would get the fog preset visibly wrong. Their soft round edge is a smoothstep on
 
 ---
 
+## Things to find
+
+Twelve sparks are hidden around the island — behind each structure, in the
+trees, out on the shore. Walk within 1.3 units of one and it's yours: a rising
+two-note pickup, a puff of light, and the counter under the zone dots ticks up.
+They're remembered in `localStorage`, so they stay found on your next visit.
+Find all twelve and you get fireworks over the island, a line of thanks, and the
+character keeps a warm pool of light at its feet from then on.
+
+Positions live in [`src/data/collectibles.js`](src/data/collectibles.js) as XZ
+pairs, with the height coming from the heightfield like everything else. Each
+one was checked against `isPlantable()` for slope and tide, kept 4.5+ units off
+the nearest structure so it reads as *behind* the building rather than part of
+it, and kept 1.8+ units off the nearest trunk so it isn't buried inside a tree.
+Move one and the collider, the glow and the counter all follow; put one
+somewhere unreachable and the dev build says so in the console rather than
+letting it sit there uncollectable.
+
+A few things about how it's built:
+
+**The pickup effect and the fireworks are mounted from the first frame.** They
+sit at zero alpha until they're needed, driven by a start time rather than being
+created on the event. A material built at the moment of pickup would compile its
+shader right then — a visible hitch in precisely the moment that shouldn't have
+one. This is the same reason the stars and the rain are forced visible during
+warmup.
+
+**Collected sparks are hidden by zeroing an instance matrix**, not by
+re-rendering with a shorter list. Rebuilding the geometry to drop one item would
+throw away the whole set's shader and rebuild it mid-walk.
+
+**The pickup note climbs a pentatonic scale with each find**, so the twelfth
+sounds an octave above the first. A fixed sound tells you something happened; a
+rising one tells you how far along you are.
+
+**The celebration is a moment, not a state.** `celebrating` is set on the frame
+the last spark is collected and cleared when the last ember dies — a later visit
+loads a full list without replaying anything. `?celebrate=1` in dev fires the
+display on demand, because reviewing a reward shouldn't cost a lap of the island.
+
+### Two easter eggs
+
+**The hidden grove.** One lantern and a note, in the most enclosed clearing on
+the island. The spot wasn't chosen by eye — it's the standable point with the
+most trunks within seven units that's also a long way from every structure,
+found by searching the tree scatter. Nothing marks it, it isn't part of the
+count and it never appears on the minimap; you only find it by going somewhere
+there was no reason to go. The note fades in with distance rather than snapping
+on at a trigger radius, so walking up feels like the light reaching you. **The
+text is yours to rewrite** — it's in `collectibles.js`, and it's the one place
+on the site that talks to somebody who went looking.
+
+**Click the character five times** (inside a second and a half of each other)
+and it does a full turn on the spot. The turn is added to the same code that
+already owns the model's rotation, so there's only ever one writer, and a full
+revolution ends where it started — nothing to unwind, and ecctrl's facing is
+untouched throughout.
+
+---
+
 ## Sound
 
 There is still not a single audio file in the build. That began as a licensing
@@ -305,11 +365,13 @@ itself is unrequested motion); the manual switcher stays.
 | `?stats` | drei’s fps overlay |
 | `?weather=<key>` | Pin one weather preset (day, night, rain…) |
 | `?physics=1` | Rapier’s debug wireframes |
+| `?celebrate=1` | Fire the all-found fireworks without finding all twelve |
 
 Dev builds also publish probes on `window`: `__player` and `__feet` for the
-character, `__jitter` for idle drift, and `__wind` for the ambience clock —
-everything in that layer is animated by three numbers, so `__wind` tells you
-straight away whether a frozen-looking island is the clock's fault.
+character, `__jitter` for idle drift, `__emote` for the click counter, and
+`__wind` for the ambience clock — everything in that layer is animated by three
+numbers, so `__wind` tells you straight away whether a frozen-looking island is
+the clock's fault.
 
 All are stripped from production builds.
 

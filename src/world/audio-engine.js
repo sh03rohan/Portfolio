@@ -389,6 +389,67 @@ export function createAudioEngine() {
       stepClock = interval * (0.94 + Math.random() * 0.12)
     },
 
+    /**
+     * Picking up a spark: two notes, up.
+     *
+     * The pitch climbs a scale degree with each one found, so the twelfth
+     * sounds an octave above the first and the set audibly fills up. That's the
+     * whole reason this takes the count — a fixed pickup sound tells you
+     * something happened, a rising one tells you how far along you are.
+     */
+    pickup(index = 0) {
+      if (disposed) return
+      const now = ctx.currentTime
+      // Major pentatonic, so any two in a row are consonant however you
+      // stumble across them.
+      const steps = [0, 2, 4, 7, 9]
+      const semis = steps[index % steps.length] + 12 * Math.floor(index / steps.length)
+      const root = 587.33 * Math.pow(2, semis / 12) // D5 up
+
+      for (const [mult, delay, level] of [
+        [1, 0, 0.13],
+        [1.5, 0.085, 0.1],
+      ]) {
+        const osc = ctx.createOscillator()
+        osc.type = 'triangle'
+        osc.frequency.value = root * mult
+
+        const env = ctx.createGain()
+        env.gain.setValueAtTime(0, now + delay)
+        env.gain.linearRampToValueAtTime(level, now + delay + 0.01)
+        env.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.55)
+
+        osc.connect(env).connect(master)
+        osc.start(now + delay)
+        osc.stop(now + delay + 0.6)
+      }
+    },
+
+    /** All twelve found: a short rising figure, once. */
+    fanfare() {
+      if (disposed) return
+      const now = ctx.currentTime
+      const notes = [587.33, 739.99, 880, 1174.66]
+      notes.forEach((freq, i) => {
+        const t = now + i * 0.13
+        for (const [mult, level] of [
+          [1, 0.12],
+          [2, 0.05],
+        ]) {
+          const osc = ctx.createOscillator()
+          osc.type = 'triangle'
+          osc.frequency.value = freq * mult
+          const env = ctx.createGain()
+          env.gain.setValueAtTime(0, t)
+          env.gain.linearRampToValueAtTime(level, t + 0.012)
+          env.gain.exponentialRampToValueAtTime(0.0001, t + (i === notes.length - 1 ? 2.2 : 0.7))
+          osc.connect(env).connect(master)
+          osc.start(t)
+          osc.stop(t + 2.4)
+        }
+      })
+    },
+
     /** A soft bell, struck when a zone fans its cards out. */
     chime() {
       if (disposed) return

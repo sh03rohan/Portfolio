@@ -1,6 +1,7 @@
-import { Volume2, VolumeX, FileText } from 'lucide-react'
+import { Volume2, VolumeX, FileText, Sparkles } from 'lucide-react'
 import { content } from '../data/content.js'
 import { zones } from '../data/world.js'
+import { collectibleCount } from '../data/collectibles.js'
 import { controlHints } from '../world/controls.js'
 import { useStore } from '../store.js'
 import Minimap from './Minimap.jsx'
@@ -16,6 +17,10 @@ export default function Hud() {
   const audioOn = useStore((s) => s.audioOn)
   const toggleAudio = useStore((s) => s.toggleAudio)
   const setTextMode = useStore((s) => s.setTextMode)
+  const found = useStore((s) => s.found)
+  const celebrating = useStore((s) => s.celebrating)
+
+  const allFound = found.length >= collectibleCount
 
   return (
     <>
@@ -57,8 +62,24 @@ export default function Hud() {
         ))}
       </div>
 
+      <div
+        className={`sparks${allFound ? ' is-complete' : ''}`}
+        aria-label={`${found.length} of ${collectibleCount} sparks found`}
+      >
+        <Sparkles size={14} aria-hidden="true" />
+        <span>
+          {found.length} / {collectibleCount}
+        </span>
+      </div>
+
       <div className={`hud-hint${nearZone && !openZone ? ' is-visible' : ''}`} aria-live="polite">
         Press <kbd>E</kbd> to open
+      </div>
+
+      {/* Announced politely rather than assertively: it's a nice thing that
+          happened, not something anybody needs interrupting for. */}
+      <div className={`toast${celebrating ? ' is-visible' : ''}`} role="status" aria-live="polite">
+        {celebrating ? `All ${collectibleCount} sparks found — thank you for exploring.` : ''}
       </div>
 
       <Minimap />

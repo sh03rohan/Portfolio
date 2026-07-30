@@ -1,5 +1,30 @@
 import { create } from 'zustand'
 import { WEATHER } from './data/weather.js'
+import { collectibleCount } from './data/collectibles.js'
+
+const FOUND_KEY = 'rohan-portfolio:found'
+
+/**
+ * Reading and writing localStorage both throw outright in Safari's private
+ * mode, so every access is guarded. A visitor who can't persist their finds
+ * should still be able to make them.
+ */
+function loadFound() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FOUND_KEY) ?? '[]')
+    return Array.isArray(raw) ? raw.filter((id) => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function saveFound(found) {
+  try {
+    localStorage.setItem(FOUND_KEY, JSON.stringify(found))
+  } catch {
+    // Nothing to do about it, and nothing worth telling the visitor.
+  }
+}
 
 const pinnedWeather = () =>
   import.meta.env.DEV ? new URLSearchParams(window.location.search).get('weather') : null
@@ -46,6 +71,35 @@ export const useStore = create((set, get) => ({
   visited: [],
   markVisited: (id) =>
     set((s) => (s.visited.includes(id) ? s : { visited: [...s.visited, id] })),
+
+  // --- collectibles --------------------------------------------------------
+  /**
+   * ids of the sparks already picked up, restored from the last visit.
+   *
+   * Only ever appended to, and it holds ids rather than a count so that moving
+   * or renaming a collectible can't leave someone stuck at 11 of 12 forever.
+   */
+  found: loadFound(),
+
+  /**
+   * Set on the frame the last spark is collected, and only then — not on a
+   * later visit that merely loads a full list. The reward is a moment, and a
+   * moment you get again on every reload isn't one.
+   */
+  celebrating: false,
+  endCelebration: () => set({ celebrating: false }),
+
+  markFound: (id) =>
+    set((s) => {
+      if (s.found.includes(id)) return s
+      const found = [...s.found, id]
+      saveFound(found)
+      return { found, celebrating: found.length >= collectibleCount }
+    }),
+
+  /** Clicks on the character earn a spin; this is what the model watches. */
+  emotes: 0,
+  emote: () => set((s) => ({ emotes: s.emotes + 1 })),
 
   // --- weather -------------------------------------------------------------
   /**

@@ -351,6 +351,55 @@ kbd {
   border-color: color-mix(in srgb, var(--amber) 55%, transparent);
 }
 
+/* -------------------------------------------------- collectible counter --- */
+/* Sits directly under the zone dots, in the same column, because it's the same
+   kind of information — how much of the island you've seen. */
+.sparks {
+  position: absolute;
+  top: max(6.1rem, calc(env(safe-area-inset-top) + 4.8rem));
+  left: max(1.35rem, env(safe-area-inset-left));
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink-faint);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  transition: color 0.6s var(--ease);
+}
+
+.sparks.is-complete {
+  color: var(--amber);
+}
+
+/* ------------------------------------------------------ celebration toast */
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translate(-50%, 14px);
+  padding: 0.7rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  color: var(--amber);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease), visibility 0.6s;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
 /* ------------------------------------------------------------- minimap --- */
 .minimap {
   position: absolute;

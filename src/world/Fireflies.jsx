@@ -13,6 +13,7 @@ import { WEATHER } from '../data/weather.js'
 import { allTreePoints } from './trees.js'
 import { makeRandom, terrainHeight } from './heightfield.js'
 import { uTime, uAnimate } from './wind.js'
+import { attenuateFog } from './glow.js'
 import { useStore } from '../store.js'
 
 /**
@@ -127,6 +128,8 @@ function useFireflyMaterial(presence) {
           diffuseColor.rgb *= ${GLOW_BOOST.toFixed(1)};
           `,
         )
+
+      attenuateFog(shader)
     }
 
     material.customProgramCacheKey = () => 'fireflies-v1'

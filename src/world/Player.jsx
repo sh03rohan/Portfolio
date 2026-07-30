@@ -5,11 +5,19 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import Ecctrl, { EcctrlAnimation, useJoystickControls } from 'ecctrl'
 import { Vector3, AdditiveBlending } from 'three'
 import { spawn, island } from '../data/world.js'
+import { EMOTE_CLICKS, collectibleCount } from '../data/collectibles.js'
 import { useModel, MODELS } from './assets.js'
 import { terrainHeight } from './heightfield.js'
 import { useBeforePhysicsStep } from '@react-three/rapier'
 import { usePlayerPosition, playerMotion } from './player-position.js'
+import { sfx } from './sfx.js'
 import { useStore } from '../store.js'
+
+/** How long a full emote turn takes. */
+const EMOTE_SECONDS = 0.9
+
+/** Clicks have to land inside this of each other to count as a run. */
+const EMOTE_WINDOW_MS = 1400
 
 const CHARACTER_URL = MODELS.character
 
@@ -133,7 +141,7 @@ function useGroundedFeet(rigRef, offsetRef) {
  * The rotation is applied to the offset group rather than the rig, so ecctrl
  * still owns facing once play starts and there's nothing to unwind.
  */
-function useIdleShowcase(offsetRef, ringRef) {
+function useIdleShowcase(offsetRef, ringRef, emoteRef) {
   const entered = useStore((s) => s.entered)
   const reducedMotion = useStore((s) => s.reducedMotion)
   const spin = useRef(0)
@@ -147,7 +155,26 @@ function useIdleShowcase(offsetRef, ringRef) {
     // Unwind to face forward once play starts, so ecctrl takes over cleanly.
     else if (entered) spin.current += (0 - spin.current) * Math.min(1, delta * 4)
 
-    offset.rotation.y = MODEL_YAW_OFFSET + spin.current
+    /**
+     * The emote turn. Added here rather than written anywhere else because this
+     * is already the one thing that owns `offset.rotation.y` — two writers would
+     * just fight. A full turn ends exactly where it started, so there's nothing
+     * to unwind afterwards and ecctrl's facing is untouched throughout.
+     */
+    let emoteSpin = 0
+    const emote = emoteRef.current
+    if (emote.running) {
+      emote.elapsed += delta
+      const t = Math.min(1, emote.elapsed / EMOTE_SECONDS)
+      // Ease in and out, so it reads as a deliberate spin rather than a glitch.
+      emoteSpin = (t * t * (3 - 2 * t)) * Math.PI * 2
+      if (t >= 1) {
+        emote.running = false
+        emote.elapsed = 0
+      }
+    }
+
+    offset.rotation.y = MODEL_YAW_OFFSET + spin.current + emoteSpin
 
     if (ring) {
       const target = entered ? 0 : 1
@@ -161,6 +188,7 @@ function CharacterModel(props) {
   const group = useRef()
   const offset = useRef()
   const ring = useRef()
+  const aura = useRef()
   const { scene, animations } = useModel(CHARACTER_URL)
 
   // Clone through SkeletonUtils so the skinned mesh keeps a working skeleton.
@@ -177,14 +205,66 @@ function CharacterModel(props) {
     })
   }, [model])
 
+  /**
+   * Five clicks in a row earns a spin.
+   *
+   * Kept in a ref rather than the store: a click on the character shouldn't
+   * re-render the scene, and the run has to reset on its own if you wander off
+   * mid-way. The window is per-click, so a slow tapper never gets there — which
+   * is the point of it being an easter egg.
+   */
+  const clicks = useRef({ count: 0, last: 0 })
+  const emote = useRef({ running: false, elapsed: 0 })
+
+  const onCharacterClick = (event) => {
+    event.stopPropagation()
+    if (!useStore.getState().entered) return
+
+    const now = performance.now()
+    clicks.current.count = now - clicks.current.last < EMOTE_WINDOW_MS ? clicks.current.count + 1 : 1
+    clicks.current.last = now
+
+    if (clicks.current.count >= EMOTE_CLICKS && !emote.current.running) {
+      clicks.current.count = 0
+      emote.current = { running: true, elapsed: 0 }
+      sfx.emit('discover')
+    }
+
+    if (import.meta.env.DEV) {
+      window.__emote = { clicks: clicks.current.count, running: emote.current.running }
+    }
+  }
+
   useGroundedFeet(group, offset)
-  useIdleShowcase(offset, ring)
+  useIdleShowcase(offset, ring, emote)
+
+  // A warm pool that stays lit once every spark has been found.
+  const found = useStore((s) => s.found)
+  const complete = found.length >= collectibleCount
+  useFrame((_, delta) => {
+    const mesh = aura.current
+    if (!mesh) return
+    const target = complete ? 0.42 : 0
+    mesh.material.opacity += (target - mesh.material.opacity) * Math.min(1, delta * 2)
+    mesh.visible = mesh.material.opacity > 0.01
+  })
 
   return (
     <group ref={group} {...props} dispose={null}>
       <group ref={offset} rotation={[0, MODEL_YAW_OFFSET, 0]} position={[0, MODEL_FOOT_OFFSET, 0]}>
         <primitive object={model} scale={0.38} />
       </group>
+
+      {/* The click target. A capsule rather than the model itself: raycasting a
+          skinned mesh means walking its skeleton on every click, and this is a
+          shape that can't miss the middle of the character. Transparent rather
+          than `visible={false}`, because an invisible object is still a
+          raycast target in three but the two behave differently enough across
+          versions that it isn't worth relying on. */}
+      <mesh onClick={onCharacterClick} position={[0, MODEL_FOOT_OFFSET + 0.85, 0]}>
+        <capsuleGeometry args={[0.42, 0.9, 4, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
 
       {/* Spotlight pool, only while waiting to be clicked. */}
       <mesh
@@ -196,6 +276,25 @@ function CharacterModel(props) {
         <circleGeometry args={[1.15, 48]} />
         <meshBasicMaterial
           color="#ffc98a"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={AdditiveBlending}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* The reward glow. Same trick, different colour and it never fades out. */}
+      <mesh
+        ref={aura}
+        position={[0, MODEL_FOOT_OFFSET + 0.03, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        renderOrder={2}
+        visible={false}
+      >
+        <circleGeometry args={[0.95, 40]} />
+        <meshBasicMaterial
+          color="#ffd98a"
           transparent
           opacity={0}
           depthWrite={false}

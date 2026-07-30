@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createAudioEngine } from './audio-engine.js'
 import { playerPosition, playerMotion } from './player-position.js'
+import { sfx } from './sfx.js'
 import { useStore } from '../store.js'
 
 /**
@@ -57,6 +58,18 @@ export default function Audio() {
       engine.current?.step(position, playerMotion, delta, useStore.getState().entered)
     })
   }, [])
+
+  // One-shot sounds emitted from inside the canvas. This is the only place that
+  // knows what any of them sound like.
+  useEffect(
+    () =>
+      sfx.subscribe((name, detail) => {
+        if (name === 'pickup') engine.current?.pickup(detail)
+        else if (name === 'complete') engine.current?.fanfare()
+        else if (name === 'discover') engine.current?.chime()
+      }),
+    [],
+  )
 
   // Ring the bell when a zone opens (not when it closes).
   useEffect(() => {
