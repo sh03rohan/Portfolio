@@ -6,6 +6,7 @@ import {
   cooldownRemaining,
   isShared,
   primeResource,
+  relativeTime,
   validate,
 } from '../data/lanterns.js'
 import { useStore } from '../store.js'
@@ -24,6 +25,9 @@ export default function Guestbook() {
   const closeZone = useStore((s) => s.closeZone)
   const prependLantern = useStore((s) => s.prependLantern)
 
+  const lanterns = useStore((s) => s.lanterns)
+  const readLantern = useStore((s) => s.readLantern)
+
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState(null)
@@ -36,6 +40,26 @@ export default function Guestbook() {
     if (open) field.current?.focus()
     else setStatus(null)
   }, [open])
+
+  /**
+   * Escape closes the panel, and this handler is deliberately *not* guarded by
+   * `isTyping()`.
+   *
+   * Everything else that reads the keyboard bails while a field has focus —
+   * otherwise typing "the" would trip the E-to-close binding. Escape is the
+   * exception, because a dismissal key that stops working once you start
+   * writing is a trap.
+   */
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      closeZone()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open, closeZone])
 
   if (!open) return null
 
@@ -92,6 +116,10 @@ export default function Guestbook() {
     try {
       await addLantern(entry)
       setStatus({ kind: 'ok', text: 'Your lantern is on its way ✦' })
+      // Long enough to read the confirmation, then out of the way so the
+      // lantern can be watched going up. Submitting is one of the three ways
+      // out of here, alongside Escape and the close button.
+      setTimeout(() => useStore.getState().closeZone(), 1700)
     } catch (error) {
       setStatus({ kind: 'warn', text: error.message })
     } finally {
@@ -102,7 +130,23 @@ export default function Guestbook() {
   const left = MESSAGE_MAX - message.length
 
   return (
-    <div className="guestbook" role="dialog" aria-modal="false" aria-label="Release a sky lantern">
+    <div
+      className="guestbook"
+      role="dialog"
+      aria-modal="false"
+      aria-label="Release a sky lantern"
+      /**
+       * Nothing that happens inside this panel is allowed to reach the canvas.
+       * ecctrl listens for pointer events to rotate the camera, so without this
+       * a drag to select text in the message field also swings the camera, and
+       * a click on "Release" starts a look-around.
+       */
+      onPointerDown={(event) => event.stopPropagation()}
+      onPointerUp={(event) => event.stopPropagation()}
+      onPointerMove={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+      onWheel={(event) => event.stopPropagation()}
+    >
       <button type="button" className="guestbook__close" onClick={closeZone} aria-label="Close">
         ×
       </button>
@@ -163,9 +207,50 @@ export default function Guestbook() {
         </p>
       ) : null}
 
-      {/* The lanterns are directly overhead, which is outside the frame until
-          you look up. Worth saying, or the sky appears to be empty. */}
-      <p className="guestbook__aside">Drag to look up — then tap a lantern to read it.</p>
+      {/**
+        * The messages, as text.
+        *
+        * The sky is the point of this feature, but it's a bad reading surface:
+        * a lantern forty units up is a few pixels of glow, and finding a
+        * specific one means panning around hunting for it. So the same data is
+        * here as a plain scrollable list — the guestbook is legible whether or
+        * not you feel like looking for it.
+        *
+        * Clicking a row pins that lantern's label in the world, which doubles
+        * as a way of finding it.
+        */}
+      {lanterns.length > 0 ? (
+        <div className="guestbook__recent">
+          <p className="guestbook__label guestbook__label--plain">
+            Recent messages
+            <span className="guestbook__count">{lanterns.length}</span>
+          </p>
+          <ul className="guestbook__list">
+            {lanterns.slice(0, 40).map((entry, i) => (
+              <li key={`${entry.created_at}-${i}`}>
+                <button type="button" className="guestbook__row" onClick={() => readLantern(i)}>
+                  <span className="guestbook__row-msg">{entry.message}</span>
+                  <span className="guestbook__row-by">
+                    {entry.name}
+                    {entry.created_at ? (
+                      <span className="guestbook__row-when">{relativeTime(entry.created_at)}</span>
+                    ) : null}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="guestbook__aside">
+          {isShared ? 'No lanterns yet — yours would be the first.' : 'Nothing in the sky yet.'}
+        </p>
+      )}
+
+      {/* Some are down at head height by the brazier; the rest are overhead and
+          outside the frame until you look up. Worth saying, or the sky appears
+          to be empty. */}
+      <p className="guestbook__aside">Drag to look up ↑ — or tap a lantern to read it.</p>
     </div>
   )
 }

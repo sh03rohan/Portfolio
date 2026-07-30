@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useKeyboardControls } from '@react-three/drei'
 import { zones } from '../data/world.js'
+import { isTyping } from './controls.js'
 import { playerPosition } from './player-position.js'
 import { useStore } from '../store.js'
 import Zone from './Zone.jsx'
@@ -52,6 +53,8 @@ function Proximity() {
         (state) => state.action1,
         (pressed) => {
           if (!pressed) return
+          // Typing an "e" into the guestbook must not close the guestbook.
+          if (isTyping()) return
           const { nearZone, toggleZone } = useStore.getState()
           if (nearZone) toggleZone(nearZone)
         },
@@ -64,6 +67,10 @@ function Proximity() {
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.key !== 'Escape') return
+      // While a field has focus the panel handles its own Escape, so this bows
+      // out rather than racing it. Escape still always dismisses — it's the one
+      // key that has to keep working mid-sentence.
+      if (isTyping()) return
       const { openZone, closeZone } = useStore.getState()
       if (openZone) closeZone()
     }

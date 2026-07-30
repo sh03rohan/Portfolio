@@ -12,6 +12,24 @@ export const keyboardMap = [
   { name: 'action1', keys: ['KeyE'] },
 ]
 
+/**
+ * True while the visitor is typing into something.
+ *
+ * Every global key handler has to check this first. The guestbook is the reason:
+ * `E` is bound to open and close a zone, so writing the word "the" into the
+ * message field used to shut the panel mid-sentence — and `Space` jumped, and
+ * WASD walked away from the platform.
+ *
+ * Movement is stopped a second way too, by handing ecctrl `disableControl` while
+ * a panel is open (see Player.jsx). Both are needed: this guards the handlers
+ * that read the key map, and that stops the ones that read it every frame.
+ */
+export function isTyping() {
+  const el = document.activeElement
+  if (!el) return false
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable === true
+}
+
 /** Shown in the HUD legend. */
 export const controlHints = [
   { keys: ['W', 'A', 'S', 'D'], label: 'Move' },

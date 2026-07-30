@@ -163,6 +163,20 @@ world; keeping them out in front of the structure is what stops that showing.
 plain module (`player-position.js`) that consumers read inside their own
 `useFrame`; the store only changes when you actually enter or leave a zone.
 
+**Typing suspends the controls.** `E` opens and closes a zone, `Space` jumps and
+WASD walks — so with a text field on screen, writing the word "the" used to shut
+the guestbook mid-sentence and wander off the platform. Two guards, because there
+are two ways to read a key: `isTyping()` in `controls.js` bails out of every
+handler that *subscribes* to the key map, and ecctrl gets `disableControl` while
+a panel is open, which stops the one that reads it every frame. ecctrl returns
+out of its loop after the camera work, so the follow camera and drag-to-look keep
+working — which matters, because the lanterns are overhead.
+
+Escape is the deliberate exception: it is **not** guarded, because a dismissal key
+that stops working once you start writing is a trap. The panel owns it, and the
+other Escape handlers stand down while a field has focus so one press dismisses
+one thing.
+
 **There is no loading screen, only a veil.** The island renders from the first
 frame; `Intro.jsx` is a single element over the canvas that blurs and dims
 what's already there, and it moves through three states — a heavy blur with a
@@ -335,11 +349,36 @@ exactly**, or you tap a lantern and read a different one's message. Three
 hundred sphere tests on a click are far cheaper than writing three hundred
 matrices every frame just to keep three's picking informed.
 
-**The column height is tuned to the camera, not to realism.** At 78 units it
-looked right in isolation and was almost entirely outside the frustum in
-practice — the follow camera sits about two units up with a 48° field of view.
-46 keeps the whole column reachable with an ordinary drag, and the panel says so,
-because a sky you can't see reads as a sky that's empty.
+**Most of it is tuned to the camera, not to realism.** Sky lanterns really do go
+up and away, and the honest version of that made the guestbook unreadable — a
+message forty units overhead is a few pixels of glow, and finding a particular
+one means panning around hunting for it. Three things fix that:
+
+- **The column is 46 units, not 78.** At 78 it looked right in isolation and was
+  almost entirely outside the frustum in practice; the follow camera sits about
+  two units up with a 48° field of view.
+- **About a third of the lanterns stay in a low band** — a slow carousel at head
+  height, a few units out from the brazier. From the platform six or so are on
+  screen without looking up at all, where before it was none. The rest carry on
+  up for the view.
+- **The same messages are also plain text** in the panel: a scrollable list,
+  newest first. Clicking a row pins that lantern's label out in the world, which
+  doubles as a way of finding it.
+
+**Tapping uses an angular tolerance, not a sphere.** A fixed-radius hit sphere is
+a comfortable target at three metres and a two-pixel needle at forty. Scaling the
+radius with distance fixes that and creates a worse problem: in the low band the
+spheres overlap so heavily that tapping one reliably opens a neighbour's message —
+measured, by aiming at a named lantern and reading back which one answered.
+Comparing perpendicular offset against distance along the ray instead makes the
+target a constant *angle*, so it's about sixteen pixels wherever the lantern is,
+and overlaps resolve the way they look: the nearest one wins, which is the one
+you can see.
+
+**Hover previews, tap pins.** One at a time, and a pin always wins so drifting
+the cursor across a neighbour can't steal a message you deliberately opened.
+Touch has no hover, so tapping works on its own — the hover is a mouse
+affordance on top, not the mechanism.
 
 ---
 

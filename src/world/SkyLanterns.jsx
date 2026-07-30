@@ -7,7 +7,7 @@ import {
   LatheGeometry,
   MeshStandardMaterial,
   Object3D,
-  Sphere,
+
   Vector2,
   Vector3,
 } from 'three'
@@ -49,34 +49,90 @@ export function platformAnchor() {
 }
 
 /**
+ * What fraction of lanterns stay down in the readable band.
+ *
+ * The column alone was the wrong answer. Sky lanterns really do go up and away,
+ * and the honest version of that put every message either too high to read or
+ * too small to tap — a guestbook nobody can actually read is just a particle
+ * effect. So a bit over a third of them circle the platform at head height,
+ * close enough to read at a glance, and the rest carry on up for the view.
+ */
+export const BAND_SHARE = 0.38
+
+/**
+ * The band's floor, its vertical travel, and how far out it orbits.
+ *
+ * Pushed out from an earlier 3.5–5.5 and lifted from 1.5: at the tighter radius
+ * a lantern regularly parked between the follow camera and the character, which
+ * is a glowing blob over the thing you're controlling. At 5–8 units and just
+ * above head height they drift past rather than through.
+ */
+const BAND_LOW = 1.9
+const BAND_RISE = 2.3
+const BAND_RING = 4.4
+const BAND_RING_SPREAD = 2.3
+
+/**
+ * How far off-centre a tap can be and still count, as a ratio of distance.
+ *
+ * The camera's vertical half-angle is 24°, i.e. tan ≈ 0.445 across half the
+ * viewport — so on a 640px-tall window one pixel is about 0.0014 of this ratio,
+ * and 0.022 works out to a target roughly sixteen pixels across whether the
+ * lantern is three units away or forty.
+ */
+const ANGULAR_TOLERANCE = 0.022
+
+/**
  * The drift, in JavaScript.
  *
- * This has to agree with the GLSL in `useLanternMaterial` exactly, because the
- * message label is positioned from it — if the two drift apart, the label sits
- * next to the wrong lantern, or next to nothing. Any change to one is a change
- * to both.
+ * This has to agree with the GLSL in `useLanternMaterial` **exactly**, because
+ * both the message label and the click target are positioned from it — if the
+ * two drift apart you tap one lantern and read another's message. Any change
+ * to one is a change to both.
  */
 export function lanternOffset(seed, time, out = new Vector3()) {
-  const [phase, speed, radius, start] = seed
+  const [phase, speed, radius, start, band] = seed
+
+  if (band > 0.5) {
+    // A slow carousel at eye level: bobs between 1.5 and 3.8, orbiting the
+    // brazier a few units out.
+    const bob = 0.5 + 0.5 * Math.sin(time * 0.45 * speed + phase)
+    const angle = time * 0.12 * speed + phase
+    const ring = BAND_RING + radius * BAND_RING_SPREAD
+    return out.set(
+      Math.cos(angle) * ring,
+      BAND_LOW + bob * BAND_RISE,
+      Math.sin(angle) * ring,
+    )
+  }
+
   const height = (start + time * speed * 0.35) % 1
-  const y = height * COLUMN_HEIGHT
   const spread = 1 + height * 10
   return out.set(
     Math.sin(time * 0.19 + phase) * radius * spread,
-    y,
+    height * COLUMN_HEIGHT,
     Math.cos(time * 0.16 + phase * 1.31) * radius * spread,
   )
 }
 
-/** Deterministic per-lantern character, so a given message always drifts the same way. */
+/**
+ * Deterministic per-lantern character, so a given message always drifts the
+ * same way — and, because the band flag is part of it, always stays in the same
+ * layer. A message that migrated between the band and the column on reload
+ * would make the sky feel arbitrary.
+ */
 export function lanternSeeds(count, rng = makeRandom(8081)) {
   const seeds = []
   for (let i = 0; i < count; i++) {
+    // Every third-ish lantern, spread evenly rather than randomly, so the
+    // newest few messages are never all stuck up in the column.
+    const band = i % 3 === 1 ? 1 : rng() < BAND_SHARE * 0.35 ? 1 : 0
     seeds.push([
       rng() * Math.PI * 2, // phase
-      0.55 + rng() * 0.55, // rise speed
-      0.5 + rng() * 1.6, // sway radius near the platform
+      0.55 + rng() * 0.55, // rise speed / orbit rate
+      0.5 + rng() * 1.6, // sway radius
       rng(), // starting height through the column
+      band, // 1 = readable band, 0 = climbing
     ])
   }
   return seeds
@@ -129,25 +185,42 @@ function useLanternMaterial() {
           uniform float uAnimate;
           uniform float uColumn;
           attribute vec4 aDrift;   // phase, rise speed, sway radius, start height
+          attribute float aBand;   // 1 = readable band, 0 = climbing
           varying float vAltitude; // 0 at the platform, 1 at the top of the column
           `,
         )
+        // Mirrored by lanternOffset() in this file. The label and the click
+        // target are both placed from the JavaScript copy, so the two must
+        // stay identical — change one, change the other.
         .replace(
           '#include <begin_vertex>',
           /* glsl */ `
           #include <begin_vertex>
-          // Under reduced motion the column is frozen where it stands rather
-          // than collapsed to the platform — still a sky full of lanterns,
-          // just a still one.
+          // Under reduced motion the sky is frozen where it stands rather than
+          // collapsed to the platform — still a sky full of lanterns, just a
+          // still one.
           float t = uTime * uAnimate;
-          float height = fract( aDrift.w + t * aDrift.y * 0.35 );
-          vAltitude = height;
 
-          // They spread as they climb: tight over the brazier, scattered high up.
-          float spread = 1.0 + height * 10.0;
-          transformed.x += sin( t * 0.19 + aDrift.x ) * aDrift.z * spread;
-          transformed.z += cos( t * 0.16 + aDrift.x * 1.31 ) * aDrift.z * spread;
-          transformed.y += height * uColumn;
+          if ( aBand > 0.5 ) {
+            // The readable band: a slow carousel at head height, close enough
+            // in to read and to tap.
+            float bob = 0.5 + 0.5 * sin( t * 0.45 * aDrift.y + aDrift.x );
+            float angle = t * 0.12 * aDrift.y + aDrift.x;
+            float ring = ${BAND_RING.toFixed(2)} + aDrift.z * ${BAND_RING_SPREAD.toFixed(2)};
+            transformed.x += cos( angle ) * ring;
+            transformed.z += sin( angle ) * ring;
+            transformed.y += ${BAND_LOW.toFixed(2)} + bob * ${BAND_RISE.toFixed(2)};
+            // Held at the warm end of the ramp — these are the ones being read.
+            vAltitude = 0.08;
+          } else {
+            float height = fract( aDrift.w + t * aDrift.y * 0.35 );
+            vAltitude = height;
+            // They spread as they climb: tight over the brazier, scattered high.
+            float spread = 1.0 + height * 10.0;
+            transformed.x += sin( t * 0.19 + aDrift.x ) * aDrift.z * spread;
+            transformed.z += cos( t * 0.16 + aDrift.x * 1.31 ) * aDrift.z * spread;
+            transformed.y += height * uColumn;
+          }
           `,
         )
 
@@ -193,6 +266,7 @@ export default function SkyLanterns() {
   const quality = useStore((s) => s.quality)
   const lanterns = useStore((s) => s.lanterns)
   const readLantern = useStore((s) => s.readLantern)
+  const hoverLantern = useStore((s) => s.hoverLantern)
 
   const cap = quality === 'high' ? 300 : quality === 'medium' ? 150 : 60
   const mesh = useRef()
@@ -209,11 +283,16 @@ export default function SkyLanterns() {
     const instanced = mesh.current
     if (!instanced) return
 
-    // The drift seeds are a plain instanced attribute, written once.
+    // The drift seeds are plain instanced attributes, written once.
     if (!instanced.geometry.getAttribute('aDrift')) {
-      const data = new Float32Array(cap * 4)
-      seeds.forEach((seed, i) => data.set(seed, i * 4))
-      instanced.geometry.setAttribute('aDrift', new InstancedBufferAttribute(data, 4))
+      const drift = new Float32Array(cap * 4)
+      const band = new Float32Array(cap)
+      seeds.forEach((seed, i) => {
+        drift.set(seed.slice(0, 4), i * 4)
+        band[i] = seed[4]
+      })
+      instanced.geometry.setAttribute('aDrift', new InstancedBufferAttribute(drift, 4))
+      instanced.geometry.setAttribute('aBand', new InstancedBufferAttribute(band, 1))
     }
 
     const dummy = new Object3D()
@@ -255,18 +334,42 @@ export default function SkyLanterns() {
     const instanced = mesh.current
     if (!instanced) return
 
-    const sphere = new Sphere(new Vector3(), 0.42)
     const point = new Vector3()
+    const toward = new Vector3()
 
     instanced.raycast = (raycaster, intersects) => {
       const live = visible.length
       const time = uTime.value * uAnimate.value
+
       for (let i = 0; i < live; i++) {
         lanternOffset(seeds[i], time, point).add(anchor)
-        sphere.center.copy(point)
-        if (!raycaster.ray.intersectsSphere(sphere)) continue
+
+        // Decompose the offset from the camera into "along the ray" and
+        // "perpendicular to it".
+        toward.subVectors(point, raycaster.ray.origin)
+        const along = toward.dot(raycaster.ray.direction)
+        if (along <= 0) continue // behind the camera
+        const perp = Math.sqrt(Math.max(0, toward.lengthSq() - along * along))
+
+        /**
+         * An *angular* tolerance, not a sphere.
+         *
+         * A fixed-radius sphere is a comfortable target at three metres and a
+         * two-pixel needle at forty, so the lanterns up in the column were
+         * unclickable. Scaling the radius with distance fixes that and creates
+         * a worse problem: at 2.4 units the spheres in the low band overlap so
+         * heavily that tapping one reliably gets you a neighbour's message.
+         *
+         * Comparing `perp` against `along` instead makes the target a constant
+         * *angle*, which is a constant size on screen at every distance — near
+         * or far, you're aiming at about sixteen pixels. Overlaps then resolve
+         * the way they look: R3F takes the smallest `distance`, so the lantern
+         * in front wins, which is the one the visitor can see.
+         */
+        if (perp > along * ANGULAR_TOLERANCE + 0.2) continue
+
         intersects.push({
-          distance: raycaster.ray.origin.distanceTo(point),
+          distance: along,
           point: point.clone(),
           object: instanced,
           instanceId: i,
@@ -292,7 +395,7 @@ export default function SkyLanterns() {
       window.__lanterns = {
         count: instanced.count,
         live: visible.length,
-        at: visible.slice(0, 12).map((entry, i) => {
+        at: visible.map((entry, i) => {
           lanternOffset(seeds[i], time, point).add(anchor)
           const projected = point.clone().project(camera)
           return {
@@ -322,6 +425,19 @@ export default function SkyLanterns() {
         if (event.instanceId == null || event.instanceId >= visible.length) return
         event.stopPropagation()
         readLantern(event.instanceId)
+      }}
+      // Hover previews without committing. Touch has no hover, so tapping has
+      // to work on its own — it does, via onClick above; this is a mouse
+      // affordance on top, not the mechanism.
+      onPointerMove={(event) => {
+        if (event.instanceId == null || event.instanceId >= visible.length) return
+        event.stopPropagation()
+        hoverLantern(event.instanceId)
+        document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={() => {
+        hoverLantern(null)
+        document.body.style.cursor = ''
       }}
     />
   )

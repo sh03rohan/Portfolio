@@ -42,6 +42,33 @@ const LAST_SENT_KEY = 'rohan-portfolio:lantern-sent'
  */
 export const seedLanterns = []
 
+// ---------------------------------------------------------------- format ---
+
+/**
+ * "just now", "yesterday", "this week".
+ *
+ * Vague on purpose. A guestbook entry doesn't gain anything from a timestamp,
+ * and an exact one invites arithmetic about how long ago somebody visited.
+ * Shared by the 3D label and the list in the write panel.
+ */
+const RELATIVE = [
+  [60, 'just now'],
+  [3600, 'a few minutes ago'],
+  [86400, 'today'],
+  [172800, 'yesterday'],
+  [604800, 'this week'],
+  [2592000, 'this month'],
+]
+
+export function relativeTime(iso) {
+  const then = Date.parse(iso)
+  if (!Number.isFinite(then)) return ''
+  const seconds = Math.max(0, (Date.now() - then) / 1000)
+  for (const [limit, label] of RELATIVE) if (seconds < limit) return label
+  const months = Math.round(seconds / 2592000)
+  return months >= 12 ? 'over a year ago' : `${months} months ago`
+}
+
 // ------------------------------------------------------------ validation ---
 
 /**

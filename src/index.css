@@ -558,6 +558,73 @@ kbd {
   color: var(--coral);
 }
 
+/* The list has to be able to grow without pushing the form off screen, so the
+   panel is capped by viewport height and this is the part that scrolls. */
+.guestbook {
+  max-height: min(68vh, 36rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.guestbook__recent {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+.guestbook__label--plain {
+  text-transform: uppercase;
+}
+
+.guestbook__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 9.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.guestbook__row {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s var(--ease);
+}
+
+.guestbook__row:hover,
+.guestbook__row:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.guestbook__row-msg {
+  display: block;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.guestbook__row-by {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--amber);
+}
+
+.guestbook__row-when {
+  color: var(--ink-faint);
+}
+
 .guestbook__aside {
   margin: 0.75rem 0 0;
   font-size: 0.7rem;

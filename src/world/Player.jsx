@@ -4,7 +4,7 @@ import { useAnimations, useKeyboardControls } from '@react-three/drei'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import Ecctrl, { EcctrlAnimation, useJoystickControls } from 'ecctrl'
 import { Vector3, AdditiveBlending } from 'three'
-import { spawn, island } from '../data/world.js'
+import { spawn, island, zoneById } from '../data/world.js'
 import { EMOTE_CLICKS, collectibleCount } from '../data/collectibles.js'
 import { useModel, MODELS } from './assets.js'
 import { terrainHeight } from './heightfield.js'
@@ -356,6 +356,21 @@ export default function Player() {
   const body = useRef()
   const [, getKeys] = useKeyboardControls()
 
+  /**
+   * Movement is switched off while a zone's DOM panel is open.
+   *
+   * The guestbook is a form, and drei's KeyboardControls keeps recording WASD
+   * and Space no matter where focus is — so typing a message used to walk the
+   * character off the platform and jump. `isTyping()` guards the handlers that
+   * *subscribe* to keys; this stops the one that reads them every frame.
+   *
+   * ecctrl's `disableControl` returns out of its frame loop after the camera
+   * work, so the follow camera still tracks and dragging to look around still
+   * works — which matters here, because the lanterns are overhead.
+   */
+  const openZone = useStore((s) => s.openZone)
+  const panelOpen = Boolean(zoneById[openZone]?.panel)
+
   // Spawn already standing. `?at=x,z` in dev drops you anywhere on the island,
   // which beats walking across it to check one corner.
   const start = useMemo(() => {
@@ -429,6 +444,7 @@ export default function Player() {
         ref={body}
         animated
         position={start}
+        disableControl={panelOpen}
         // Belt and braces against tunnelling on a frame spike.
         ccd
         capsuleHalfHeight={CAPSULE_HALF_HEIGHT}

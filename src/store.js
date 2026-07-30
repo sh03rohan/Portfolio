@@ -112,10 +112,22 @@ export const useStore = create((set, get) => ({
   /** Optimistic: the lantern goes up the instant you release it. */
   prependLantern: (entry) => set((s) => ({ lanterns: [entry, ...s.lanterns] })),
 
-  /** Index into `lanterns` of the one whose message is open, or null. */
+  /**
+   * Index into `lanterns` of the one whose message is open, or null. Tapping
+   * pins it; only one is ever open.
+   */
   readingLantern: null,
   readLantern: (index) => set((s) => ({ readingLantern: s.readingLantern === index ? null : index })),
   closeLantern: () => set({ readingLantern: null }),
+
+  /**
+   * Index of the lantern under the cursor. Separate from `readingLantern` so a
+   * pinned message doesn't flicker away as the mouse crosses its neighbours —
+   * the pin always wins, and this only shows through when nothing is pinned.
+   */
+  hoveredLantern: null,
+  hoverLantern: (index) =>
+    set((s) => (s.hoveredLantern === index ? s : { hoveredLantern: index })),
 
   // --- weather -------------------------------------------------------------
   /**

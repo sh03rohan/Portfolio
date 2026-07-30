@@ -3,6 +3,8 @@ import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { Vector3 } from 'three'
 import { lanternOffset, lanternSeeds, platformAnchor } from './SkyLanterns.jsx'
+import { relativeTime } from '../data/lanterns.js'
+import { isTyping } from './controls.js'
 import { uTime, uAnimate } from './wind.js'
 import { useStore } from '../store.js'
 
@@ -20,29 +22,17 @@ import { useStore } from '../store.js'
 /** Same cap as SkyLanterns, so seed indices line up. */
 const CAPS = { high: 300, medium: 150, low: 60 }
 
-const RELATIVE = [
-  [60, 'just now'],
-  [3600, 'a few minutes ago'],
-  [86400, 'today'],
-  [172800, 'yesterday'],
-  [604800, 'this week'],
-  [2592000, 'this month'],
-]
-
-function relativeTime(iso) {
-  const then = Date.parse(iso)
-  if (!Number.isFinite(then)) return ''
-  const seconds = Math.max(0, (Date.now() - then) / 1000)
-  for (const [limit, label] of RELATIVE) if (seconds < limit) return label
-  const months = Math.round(seconds / 2592000)
-  return months >= 12 ? 'over a year ago' : `${months} months ago`
-}
 
 export default function LanternMessage() {
   const quality = useStore((s) => s.quality)
   const lanterns = useStore((s) => s.lanterns)
-  const index = useStore((s) => s.readingLantern)
+  const pinned = useStore((s) => s.readingLantern)
+  const hovered = useStore((s) => s.hoveredLantern)
   const closeLantern = useStore((s) => s.closeLantern)
+
+  // A pin always wins, so crossing the cursor over a neighbour can't steal a
+  // message the visitor deliberately opened.
+  const index = pinned ?? hovered
 
   const group = useRef()
   const anchor = useMemo(platformAnchor, [])
@@ -54,7 +44,11 @@ export default function LanternMessage() {
   useEffect(() => {
     if (!entry) return
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') closeLantern()
+      if (event.key !== 'Escape') return
+      // Mid-sentence, Escape belongs to the write panel — closing a note as
+      // well would dismiss two things on one key.
+      if (isTyping()) return
+      closeLantern()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -70,22 +64,28 @@ export default function LanternMessage() {
 
   return (
     <group ref={group}>
+      {/* No `transform`, so it's screen-aligned and always square to the
+          camera. distanceFactor keeps it shrinking with distance — but 11 was
+          too small to read on a lantern up in the column, so 18 with a much
+          heavier background. */}
       <Html
         center
-        distanceFactor={11}
-        position={[0, 0.85, 0]}
+        distanceFactor={18}
+        position={[0, 0.95, 0]}
         zIndexRange={[24, 4]}
         pointerEvents="auto"
       >
-        <div className="lantern-note">
+        <div className={`lantern-note${pinned == null ? ' is-preview' : ''}`}>
           <p className="lantern-note__message">{entry.message}</p>
           <p className="lantern-note__by">
             <span>{entry.name}</span>
             {entry.created_at ? <span className="lantern-note__when">{relativeTime(entry.created_at)}</span> : null}
           </p>
-          <button type="button" className="lantern-note__close" onClick={closeLantern} aria-label="Close">
-            ×
-          </button>
+          {pinned == null ? null : (
+            <button type="button" className="lantern-note__close" onClick={closeLantern} aria-label="Close">
+              ×
+            </button>
+          )}
         </div>
       </Html>
     </group>
