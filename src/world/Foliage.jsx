@@ -1,5 +1,4 @@
 import { useMemo, useRef, useLayoutEffect } from 'react'
-import { useFrame } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import {
   Object3D,
@@ -10,22 +9,13 @@ import {
 } from 'three'
 import { useTextureSet, CANOPY_TEXTURE } from './assets.js'
 import { makeTree } from './tree-geometry.js'
-import { scatter } from './scatter.js'
+import { TREE_VARIANTS, treePoints } from './trees.js'
+import { uWind, uWindStrength } from './wind.js'
 import { useStore } from '../store.js'
-
-// Wide, overlapping scale ranges are what stop an instanced forest reading as
-// an orchard — the same trunk at 0.6x and 1.5x looks like two different trees.
-const VARIANTS = [
-  { seed: 11, tall: false, count: 24, spacing: 7.0, scale: [0.75, 1.45] },
-  { seed: 47, tall: true, count: 16, spacing: 8.4, scale: [0.7, 1.3] },
-  { seed: 93, tall: false, count: 22, spacing: 6.4, scale: [0.55, 1.1] },
-]
 
 /** Leaves need alpha cutout, double sides, and a bit of wind. */
 function useCanopyMaterial() {
   const map = useTexture(CANOPY_TEXTURE)
-  const reducedMotion = useStore((s) => s.reducedMotion)
-  const wind = useRef({ value: 0 })
 
   const material = useMemo(() => {
     map.colorSpace = SRGBColorSpace
@@ -43,11 +33,15 @@ function useCanopyMaterial() {
     })
 
     mat.onBeforeCompile = (shader) => {
-      shader.uniforms.uWind = wind.current
+      // The shared gust — same phase and strength the grass, ferns and bushes
+      // ride, so the whole island leans in one weather rather than each layer
+      // running its own private breeze.
+      shader.uniforms.uWind = uWind
+      shader.uniforms.uWindStrength = uWindStrength
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <common>',
-          '#include <common>\nuniform float uWind;\nattribute float aSway;',
+          '#include <common>\nuniform float uWind;\nuniform float uWindStrength;\nattribute float aSway;',
         )
         .replace(
           '#include <begin_vertex>',
@@ -61,18 +55,14 @@ function useCanopyMaterial() {
             float phase = 0.0;
           #endif
           float gust = sin( uWind + phase ) * 0.5 + sin( uWind * 1.7 + phase * 2.1 ) * 0.5;
-          transformed.x += gust * aSway * 0.16;
-          transformed.z += cos( uWind * 0.8 + phase ) * aSway * 0.11;
+          transformed.x += gust * aSway * 0.16 * uWindStrength;
+          transformed.z += cos( uWind * 0.8 + phase ) * aSway * 0.11 * uWindStrength;
           `,
         )
     }
-    mat.customProgramCacheKey = () => 'canopy-wind-v1'
+    mat.customProgramCacheKey = () => 'canopy-wind-v2'
     return mat
   }, [map])
-
-  useFrame((_, delta) => {
-    if (!reducedMotion) wind.current.value += delta * 0.9
-  })
 
   return material
 }
@@ -106,23 +96,7 @@ function TreeVariant({ variant, barkMaterial, canopyMaterial, index }) {
     [variant.seed, variant.tall],
   )
 
-  const points = useMemo(
-    () =>
-      scatter({
-        count: variant.count,
-        seed: variant.seed * 31 + 7,
-        minSpacing: variant.spacing,
-        maxSlope: 0.3,
-        scale: variant.scale,
-        maxRadius: 38,
-        sink: 0.15,
-        clumping: 0.85,
-        // Keep the canopies well clear of the structures — a tree in front of
-        // the cabin hides the thing the player walked over to look at.
-        clearZones: 1.75,
-      }),
-    [variant],
-  )
+  const points = useMemo(() => treePoints(variant), [variant])
 
   useLayoutEffect(() => {
     const dummy = new Object3D()
@@ -183,7 +157,7 @@ export default function Foliage() {
   const canopyMaterial = useCanopyMaterial()
   const quality = useStore((s) => s.quality)
 
-  const variants = quality === 'low' ? VARIANTS.slice(0, 2) : VARIANTS
+  const variants = quality === 'low' ? TREE_VARIANTS.slice(0, 2) : TREE_VARIANTS
 
   return (
     <group>

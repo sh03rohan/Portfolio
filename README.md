@@ -75,6 +75,13 @@ src/
   world/
     Experience.jsx    <Canvas>, colour pipeline, <Physics>, perf monitor
     heightfield.js    terrainHeight(x, z) — the island, as a pure function
+    wind.js           the one GPU clock + the foliage sway shader
+    Ambience.jsx       birds · chimney smoke · fireflies
+    Birds.jsx         instanced flock, flight solved in the vertex shader
+    Smoke.jsx         chimney plume
+    Fireflies.jsx     swarm clustered on the trees
+    trees.js          where the forest stands (shared with Fireflies)
+    audio-engine.js   the synthesiser: beds, footsteps, chime
     Terrain.jsx       visual mesh built from the heightfield
     TerrainCollider.jsx  Rapier heightfield built from the same function
     TerrainMaterial.js   4-way splat: grass / path / sand / cliff
@@ -183,6 +190,86 @@ store holds just the *target* preset index; every visible value is eased toward
 it inside the frame loop, so switching weather dissolves over a few seconds
 instead of cutting. Two components writing the fog would only fight.
 
+**One clock drives everything that moves.** The grass, ferns, bushes, canopy,
+birds, smoke and fireflies are all instanced, so the only way to animate them
+without a CPU loop over hundreds of objects is a vertex shader reading a shared
+uniform. `wind.js` holds three of them — `uTime`, `uWind`, `uWindStrength` —
+and exactly one component advances them. The CPU touches each layer once, at
+mount.
+
+That has consequences worth knowing. The clock is mounted outside every tier
+check, because the tiers switch individual layers off and a clock living inside
+one of them would freeze the trees along with the birds. The frame delta is
+clamped to 100ms, so returning to a backgrounded tab doesn't teleport every
+bird. And `prefers-reduced-motion` stops `uTime` rather than each layer, which
+means one flag freezes the whole island — but freezing a clock also freezes
+each particle wherever it happened to be in its own cycle, half the fireflies
+caught mid-blink and dark, so there's a second uniform (`uAnimate`) that lets a
+shader fall back to a steady value instead of a frozen one.
+
+The birds don't use their instance matrices at all: position, heading and
+wingbeat are solved in the shader from four numbers per bird, which is what
+makes them *fly* rather than sit at fixed points. Their normals are rotated
+into the flight basis too — skip that and every bird is lit as though it were
+facing +Z wherever it is on the circle. `applyWindSway` is idempotent on
+purpose: patching a material twice appends the uniform block twice, GLSL
+rejects the redeclaration, and the plant renders as nothing. StrictMode invokes
+a memo factory twice in development, so this is not a hypothetical.
+
+**The fireflies use the trees the forest actually drew.** That's why the tree
+scatter lives in `trees.js` rather than inside `Foliage.jsx` — clustering the
+swarm on an independently scattered set would put half of it in open grass,
+which is exactly the tell that they were sprinkled over the island rather than
+living in it.
+
+**Smoke and fireflies extend `PointsMaterial`** rather than being raw shader
+materials, which is what gets them fog, tone mapping, output colour space and
+size attenuation for free. A raw shader would have to reimplement all four, and
+would get the fog preset visibly wrong. Their soft round edge is a smoothstep on
+`gl_PointCoord`, so there's no sprite texture to download.
+
+---
+
+## Sound
+
+There is still not a single audio file in the build. That began as a licensing
+decision — no free library exposes a machine-verifiable licence per file, and
+shipping audio we can't attribute properly in [CREDITS.md](CREDITS.md) wasn't
+worth it — and the ambience layer only strengthened it. Six cross-fading beds
+and four footstep surfaces would be about a megabyte of downloads for sounds
+that a few lines of arithmetic produce, and the synthesised versions respond to
+the world continuously: the surf really does get louder as you walk toward the
+water, rather than switching between a "near" file and a "far" one.
+
+`audio-engine.js` is plain JavaScript with no React in it, so nothing about the
+sound can cause a render. What it makes:
+
+| Layer | How |
+| --- | --- |
+| Surf | Brown noise through a lowpass, level set by distance from the middle of the island |
+| Wind | Brown noise through a bandpass, with the weather's `wind` on the gain and an LFO on the *filter* — modulating the frequency rather than the volume is what makes a gust read as moving air |
+| Crickets | ~40 chirp trains written into one 6-second buffer at startup and looped; each voice wraps past the end, so the loop point is inaudible |
+| Birdsong | Scheduled one phrase at a time, 2–4 swept notes each. The one layer where a loop would be obvious, because the ear tracks the phrase |
+| Drone | Three detuned sines, each drifting on its own LFO |
+| Footsteps | Filtered white noise, one voice per surface, plus a low thump for the surfaces that have something solid to strike |
+
+Cross-fades use `setTargetAtTime`, so the browser eases them on the audio
+thread and a long frame on the main thread can't turn a fade into a step.
+
+**Footsteps read the surface from the same rule the renderer paints it with.**
+`surfaceWeights()` in `heightfield.js` is deliberately the same arithmetic as
+`splatWeights()` in the terrain shader — footsteps that disagree with what's
+visibly underfoot are worse than no footsteps at all. Grass is a mid-band
+rustle, the worn path a duller thud, sand a long soft hiss with no attack, rock
+a short bright click. Walking the path loop, the mix comes out 72% grass, 17%
+path, 7% sand, 4% cliff.
+
+Cadence follows ground speed, which is also what drives the walk and run clips,
+so the steps stay with the animation without reading its phase. It carries a few
+percent of jitter on purpose: the step clock can only fire on a frame boundary,
+so a fixed interval comes out perfectly quantised and starts to sound like a
+drum machine rather than a person.
+
 ---
 
 ## Weather
@@ -218,6 +305,11 @@ itself is unrequested motion); the manual switcher stays.
 | `?stats` | drei’s fps overlay |
 | `?weather=<key>` | Pin one weather preset (day, night, rain…) |
 | `?physics=1` | Rapier’s debug wireframes |
+
+Dev builds also publish probes on `window`: `__player` and `__feet` for the
+character, `__jitter` for idle drift, and `__wind` for the ambience clock —
+everything in that layer is animated by three numbers, so `__wind` tells you
+straight away whether a frozen-looking island is the clock's fault.
 
 All are stripped from production builds.
 
@@ -269,7 +361,9 @@ build with a separate `.wasm` file would roughly halve it, but
   scrollable document from the same data — for keyboards, screen readers, weak
   GPUs, or anyone who just wants to read it.
 - `prefers-reduced-motion` disables the wind, wave, cloud, sparkle and label
-  animations and drops depth of field.
+  animations and drops depth of field. It stops the ambience clock too, so the
+  grass, birds, smoke and fireflies hold still — the fireflies keep glowing at a
+  steady level rather than freezing wherever their blink happened to be.
 - The content cards are 3D objects, so they can't be read by a screen reader —
   which is exactly what the text résumé is for. Esc closes a card fan, and
   walking away closes it too.

@@ -8,7 +8,7 @@ import { spawn, island } from '../data/world.js'
 import { useModel, MODELS } from './assets.js'
 import { terrainHeight } from './heightfield.js'
 import { useBeforePhysicsStep } from '@react-three/rapier'
-import { usePlayerPosition } from './player-position.js'
+import { usePlayerPosition, playerMotion } from './player-position.js'
 import { useStore } from '../store.js'
 
 const CHARACTER_URL = MODELS.character
@@ -222,6 +222,13 @@ function PositionReporter({ bodyRef }) {
     if (!rigid) return
     const { x, y, z } = rigid.translation()
     setPosition(world.current.set(x, y, z))
+
+    // Straight off the body rather than differenced from the position above:
+    // the float spring and the physics interpolation both show up in position
+    // deltas, and footsteps keyed to those would tick while standing still.
+    const v = rigid.linvel()
+    playerMotion.speed = Math.hypot(v.x, v.z)
+    playerMotion.grounded = y - terrainHeight(x, z) < REST_HEIGHT + 0.45
 
     if (import.meta.env.DEV) {
       // Lets the screenshot harness compare where the player actually is

@@ -14,6 +14,11 @@
  *    small room would put your own feet in cloud here.
  *
  * Every value here is lerped, never snapped — see src/world/Weather.jsx.
+ *
+ * `wind`, `birds` and `fireflies` drive the ambience layer. `wind` scales the
+ * shared gust uniform every swaying thing on the island reads (src/world/wind.js);
+ * the other two are a presence in 0..1, not a boolean, so a flock thins out
+ * toward dusk instead of vanishing between one preset and the next.
  */
 
 export const WEATHER = [
@@ -32,6 +37,9 @@ export const WEATHER = [
     envIntensity: 1.0,
     sunPos: [38, 62, 24],
     seaColor: '#1d3f74',
+    wind: 0.6,
+    birds: 1,
+    fireflies: 0,
     stars: 0,
     clouds: 0.35,
     rain: 0,
@@ -52,6 +60,9 @@ export const WEATHER = [
     envIntensity: 0.6,
     sunPos: [-52, 26, -34],
     seaColor: '#1b2347',
+    wind: 0.45,
+    birds: 0.55,
+    fireflies: 0.5,
     stars: 0,
     clouds: 0.32,
     rain: 0,
@@ -73,6 +84,9 @@ export const WEATHER = [
     envIntensity: 0.12,
     sunPos: [-30, 44, -28],
     seaColor: '#080c22',
+    wind: 0.3,
+    birds: 0,
+    fireflies: 1,
     stars: 1,
     clouds: 0.12,
     rain: 0,
@@ -93,6 +107,9 @@ export const WEATHER = [
     envIntensity: 0.5,
     sunPos: [26, 52, 20],
     seaColor: '#2b323d',
+    wind: 1.4,
+    birds: 0,
+    fireflies: 0,
     stars: 0,
     clouds: 1,
     rain: 1,
@@ -113,6 +130,9 @@ export const WEATHER = [
     envIntensity: 0.72,
     sunPos: [24, 56, 22],
     seaColor: '#3b4552',
+    wind: 1,
+    birds: 0.8,
+    fireflies: 0,
     stars: 0,
     clouds: 0.9,
     rain: 0,
@@ -133,6 +153,9 @@ export const WEATHER = [
     envIntensity: 0.78,
     sunPos: [30, 50, 22],
     seaColor: '#4a5c6e',
+    wind: 0.7,
+    birds: 0,
+    fireflies: 0,
     stars: 0,
     clouds: 0.7,
     rain: 0,
@@ -153,6 +176,9 @@ export const WEATHER = [
     envIntensity: 0.55,
     sunPos: [22, 46, 18],
     seaColor: '#7d7a70',
+    wind: 0.18,
+    birds: 0,
+    fireflies: 0.25,
     stars: 0,
     clouds: 0.2,
     rain: 0,

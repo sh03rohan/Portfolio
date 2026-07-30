@@ -1,9 +1,10 @@
 import { useMemo, useRef, useLayoutEffect } from 'react'
-import { Object3D, Mesh } from 'three'
+import { Box3, Object3D, Mesh } from 'three'
 import { MODELS, useModel } from './assets.js'
 import { scatter, alongPath } from './scatter.js'
 import { pathNodes } from '../data/world.js'
 import { terrainHeight } from './heightfield.js'
+import { applyWindSway } from './wind.js'
 import { useStore } from '../store.js'
 
 /**
@@ -40,7 +41,7 @@ function useMeshes(url) {
 }
 
 /** Places one glTF's meshes at a shared set of transforms. */
-function InstancedModel({ url, points, castShadow = true, meshIndex, yOffset = 0 }) {
+function InstancedModel({ url, points, castShadow = true, meshIndex, yOffset = 0, sway = 0 }) {
   const meshes = useMeshes(url)
   const refs = useRef([])
 
@@ -48,6 +49,25 @@ function InstancedModel({ url, points, castShadow = true, meshIndex, yOffset = 0
     () => (meshIndex == null ? meshes : [meshes[meshIndex % meshes.length]].filter(Boolean)),
     [meshes, meshIndex],
   )
+
+  // Bend the plants in the shared gust. The material clones are private to
+  // this component (useMeshes clones per instance), so patching them in place
+  // can't leak into another prop. Amplitude is in world units at the very top
+  // of the model, and the sway height comes from the geometry rather than a
+  // guess — the same 0.1 looks like a breeze on a fern and a gale on a tuft.
+  useMemo(() => {
+    if (!sway) return
+    const box = new Box3()
+    selected.forEach((mesh, i) => {
+      if (!mesh) return
+      box.setFromBufferAttribute(mesh.geometry.attributes.position)
+      applyWindSway(mesh.material, {
+        height: box.max.y,
+        amount: sway,
+        key: `decor-sway-v1-${url}-${meshIndex ?? 'all'}-${i}`,
+      })
+    })
+  }, [selected, sway, url, meshIndex])
 
   useLayoutEffect(() => {
     const dummy = new Object3D()
@@ -187,9 +207,12 @@ export default function Decor() {
         <InstancedModel key={index} url={MODELS.rocks} points={points} meshIndex={index} />
       ))}
 
-      <InstancedModel url={MODELS.grassTuft} points={grass} castShadow={false} />
-      <InstancedModel url={MODELS.fern} points={ferns} castShadow={false} />
-      <InstancedModel url={MODELS.bush} points={bushes} />
+      {/* Blades travel furthest, ferns bend from the frond, bushes barely
+          move — a bush that sways like grass reads as tissue paper. Stumps,
+          rocks and lanterns are rigid, so they take no sway at all. */}
+      <InstancedModel url={MODELS.grassTuft} points={grass} castShadow={false} sway={0.14} />
+      <InstancedModel url={MODELS.fern} points={ferns} castShadow={false} sway={0.1} />
+      <InstancedModel url={MODELS.bush} points={bushes} sway={0.05} />
       <InstancedModel url={MODELS.stump} points={stumps} />
       <InstancedModel url={MODELS.lantern} points={lanterns} />
     </group>

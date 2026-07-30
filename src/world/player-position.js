@@ -22,5 +22,21 @@ export const playerPosition = {
   },
 }
 
+/**
+ * How the player is moving, alongside where they are.
+ *
+ * Footsteps need the ground speed and whether there's any ground under the
+ * feet, and the player is the only thing that actually knows — deriving speed
+ * from position deltas elsewhere would pick up the float spring's wobble and
+ * the physics interpolation as movement. Written once per frame by
+ * `PositionReporter`, same as the vector above.
+ */
+export const playerMotion = {
+  /** Horizontal speed in units/second. */
+  speed: 0,
+  /** False while jumping or falling. */
+  grounded: true,
+}
+
 /** Hook-shaped accessor so components can grab the setter without importing state. */
 export const usePlayerPosition = (selector = (s) => s) => selector(playerPosition)

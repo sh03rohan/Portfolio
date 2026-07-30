@@ -163,6 +163,34 @@ export function isPlantable(x, z, { minHeight = seaLevel + 1.1, maxSlope = 0.32 
   return terrainSlope(x, z) <= maxSlope
 }
 
+/**
+ * What you're standing on, as the four splat weights the ground is painted with.
+ *
+ * This is deliberately the same arithmetic as `splatWeights()` in
+ * TerrainMaterial.js — footsteps that disagree with what's visibly under the
+ * character are worse than no footsteps at all, so the audio reads the surface
+ * from the same rule the renderer does rather than from its own guess.
+ *
+ * Keep the two in step: if the thresholds there change, change them here.
+ */
+export function surfaceWeights(x, z) {
+  const slope = 1 - Math.min(1, Math.max(0, terrainNormal(x, z)[1]))
+  const cliff = smoothstep(0.3, 0.62, slope)
+  const sand = (1 - cliff) * (1 - smoothstep(seaLevel + 0.4, seaLevel + 2.6, terrainHeight(x, z)))
+  const dirt = Math.min(1, Math.max(0, pathWeight(x, z))) * (1 - cliff) * (1 - sand)
+  const grass = Math.max(0, 1 - cliff - sand - dirt)
+  const total = Math.max(1e-4, grass + dirt + sand + cliff)
+  return { grass: grass / total, dirt: dirt / total, sand: sand / total, cliff: cliff / total }
+}
+
+/** The dominant surface at a point: 'grass' | 'dirt' | 'sand' | 'cliff'. */
+export function surfaceAt(x, z) {
+  const w = surfaceWeights(x, z)
+  let best = 'grass'
+  for (const key of ['dirt', 'sand', 'cliff']) if (w[key] > w[best]) best = key
+  return best
+}
+
 /** Deterministic PRNG so decor scatter is identical on every load. */
 export function makeRandom(seed = 1) {
   let s = seed >>> 0 || 1

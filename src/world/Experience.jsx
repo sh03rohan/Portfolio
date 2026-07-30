@@ -12,6 +12,7 @@ import {
 import { Physics } from '@react-three/rapier'
 
 import Atmosphere from './Atmosphere.jsx'
+import Ambience from './Ambience.jsx'
 import Weather from './Weather.jsx'
 import Terrain from './Terrain.jsx'
 import TerrainCollider from './TerrainCollider.jsx'
@@ -94,6 +95,7 @@ function World({ freeCamera }) {
       <Decor />
       <Structures />
       <Zones />
+      <Ambience />
     </>
   )
 }
